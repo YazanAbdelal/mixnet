@@ -80,3 +80,47 @@ func ExportPublicKey(key *rsa.PublicKey, dir string, filename string) error {
 
 	return nil
 }
+
+func LoadPrivateKey(path string) (*rsa.PrivateKey, error) {
+	// load bytes from file
+	pemData, err := os.ReadFile(path)
+	if err != nil {
+		return nil, errors.New("LoadPrivateKey: Error loading key from file: " + err.Error())
+	}
+
+	// extract block
+	block, _ := pem.Decode(pemData)
+	if block == nil {
+		return nil, errors.New("LoadPrivateKey: Error decoding PEM block: " + err.Error())
+	}
+
+	// extract private key from block
+	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, errors.New("LoadPrivateKey: Error extracting private key from PEM block: " + err.Error())
+	}
+
+	return privateKey, nil
+}
+
+func LoadPublicKey(path string) (*rsa.PublicKey, error) {
+	// load bytes from file
+	pemData, err := os.ReadFile(path)
+	if err != nil {
+		return nil, errors.New("LoadPublicKey: Error loading key from file: " + err.Error())
+	}
+
+	// extract block
+	block, _ := pem.Decode(pemData)
+	if block == nil {
+		return nil, errors.New("LoadPublicKey: Error decoding PEM block: " + err.Error())
+	}
+
+	// extract public key from block
+	publicKey, err := x509.ParsePKCS1PublicKey(block.Bytes)
+	if err != nil {
+		return nil, errors.New("LoadPublicKey: Error extracting public key from PEM block: " + err.Error())
+	}
+
+	return publicKey, nil
+}
