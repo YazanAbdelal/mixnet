@@ -10,9 +10,12 @@ import (
 	"io"
 )
 
+// genAESKey generates an random key of the given size (in bytes).
 func genAESKey(size int) ([]byte, error) {
+	// make an empty slice of byte of the given size
 	aesKey := make([]byte, size)
 
+	// fill the slice with random bytes
 	_, err := io.ReadFull(rand.Reader, aesKey)
 	if err != nil {
 		return nil, errors.New("genAESKey:Error generating AESm key: " + err.Error())
@@ -21,6 +24,7 @@ func genAESKey(size int) ([]byte, error) {
 	return aesKey, nil
 }
 
+// encryptWithAES encrypts a slice of bytes using the provided AES key.
 func encryptWithAES(unencryptedBytes []byte, aesKey []byte) ([]byte, error) {
 	// generate block cipher
 	block, err := aes.NewCipher(aesKey)
@@ -38,9 +42,11 @@ func encryptWithAES(unencryptedBytes []byte, aesKey []byte) ([]byte, error) {
 	nonce := make([]byte, gcm.NonceSize())
 	io.ReadFull(rand.Reader, nonce)
 
+	// encrypt and validate message
 	return gcm.Seal(nonce, nonce, unencryptedBytes, nil), nil
 }
 
+// decryptAES decrypts a slice of bytes that was encrypted with AES using the provided key.
 func decryptAES(sealedMsg []byte, aesKey []byte) ([]byte, error) {
 	// generate block cipher
 	block, err := aes.NewCipher(aesKey)
@@ -66,6 +72,7 @@ func decryptAES(sealedMsg []byte, aesKey []byte) ([]byte, error) {
 	return decryptedBytes, nil
 }
 
+// EncryptMessage encrypts a slice of bytes with hybrid encryption using the provided keys.
 func EncryptMessage(unencryptedBytes []byte, rsaKey *rsa.PublicKey, aesKeySize int) ([]byte, error) {
 	// generate AES key
 	aesKey, err := genAESKey(aesKeySize)
@@ -88,6 +95,7 @@ func EncryptMessage(unencryptedBytes []byte, rsaKey *rsa.PublicKey, aesKeySize i
 	return append(encryptedKey, sealedMessage...), nil
 }
 
+// DecryptMessage decrypts a slice of bytes that was encrypted with a hybrid encryption using the provided keys.
 func DecryptMessage(encryptedPacket []byte, rsaKey *rsa.PrivateKey) ([]byte, error) {
 	blockSize := rsaKey.Size()
 	encryptedKey, encryptedMessage := encryptedPacket[:blockSize], encryptedPacket[blockSize:]
