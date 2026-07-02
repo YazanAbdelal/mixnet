@@ -91,7 +91,7 @@ func LoadPrivateKey(path string) (*rsa.PrivateKey, error) {
 	// extract block
 	block, _ := pem.Decode(pemData)
 	if block == nil {
-		return nil, errors.New("LoadPrivateKey: Error decoding PEM block: " + err.Error())
+		return nil, errors.New("LoadPrivateKey: Error decoding PEM block.")
 	}
 
 	// extract private key from block
@@ -113,7 +113,7 @@ func LoadPublicKey(path string) (*rsa.PublicKey, error) {
 	// extract block
 	block, _ := pem.Decode(pemData)
 	if block == nil {
-		return nil, errors.New("LoadPublicKey: Error decoding PEM block: " + err.Error())
+		return nil, errors.New("LoadPublicKey: Error decoding PEM block.")
 	}
 
 	// extract public key from block

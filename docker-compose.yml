@@ -5,12 +5,12 @@ services:
   mixnode-1:
     build:
       context: .
-      dockerfile: server/Dockerfile # Assumes a Dockerfile will be created in server/
+      dockerfile: server/Dockerfile
     volumes:
       # Mount only the specific private key this node needs to decrypt messages
       - ./keys/server_1_private.pem:/etc/mixnet/keys/private.pem:ro
       # Mount the entire public keys folder so nodes know about other nodes' public keys
-      - ./keys:/etc/mixnet/keys/public:ro
+      - ./keys/public:/etc/mixnet/keys/public:ro
     ports:
       - "5001:5001"
 
@@ -21,7 +21,7 @@ services:
       dockerfile: server/Dockerfile
     volumes:
       - ./keys/server_2_private.pem:/etc/mixnet/keys/private.pem:ro
-      - ./keys:/etc/mixnet/keys/public:ro
+      - ./keys/public:/etc/mixnet/keys/public:ro
     ports:
       - "5002:5002"
 
@@ -29,12 +29,12 @@ services:
   client-1:
     build:
       context: .
-      dockerfile: client/Dockerfile # Assumes a Dockerfile will be created in client/
+      dockerfile: client/Dockerfile
     volumes:
       # Mount client 1's private key
       - ./keys/client_1_private.pem:/etc/mixnet/keys/private.pem:ro
       # Mount all public keys so the client can construct sphinx packets / encrypt for servers
-      - ./keys:/etc/mixnet/keys/public:ro
+      - ./keys/public:/etc/mixnet/keys/public:ro
     depends_on:
       - mixnode-1
       - mixnode-2

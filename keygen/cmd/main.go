@@ -21,6 +21,7 @@ func main() {
 	fmt.Printf("Generating %d pairs of keys for the clients and %d pairs of keys for the servers... ", *clientCount, *serverCount)
 
 	keysFolder := "keys"
+	publicKeysFolder := keysFolder + "/public"
 	for i := range *clientCount {
 		privateKeyPath := "client_" + strconv.Itoa(i+1) + "_private.pem"
 		publicKetPath := "client_" + strconv.Itoa(i+1) + "_public.pem"
@@ -34,7 +35,7 @@ func main() {
 			fmt.Print("Error exporting private key: " + err.Error())
 			return
 		}
-		err = keygen.ExportPublicKey(public, keysFolder, publicKetPath)
+		err = keygen.ExportPublicKey(public, publicKeysFolder, publicKetPath)
 		if err != nil {
 			fmt.Print("Error exporting public key: " + err.Error())
 			return
@@ -54,7 +55,7 @@ func main() {
 			fmt.Print("Error exporting private key: " + err.Error())
 			return
 		}
-		err = keygen.ExportPublicKey(public, keysFolder, publicKetPath)
+		err = keygen.ExportPublicKey(public, publicKeysFolder, publicKetPath)
 		if err != nil {
 			fmt.Print("Error exporting public key: " + err.Error())
 			return
