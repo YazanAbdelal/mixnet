@@ -1,4 +1,4 @@
-package crypto
+package keygen
 
 import (
 	"crypto/rand"

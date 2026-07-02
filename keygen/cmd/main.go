@@ -5,7 +5,11 @@ import (
 	"fmt"
 	"strconv"
 
-	"https://github.com/YazanAbdelal/mixnet/keygen"
+	"github.com/YazanAbdelal/mixnet/keygen"
+)
+
+const (
+	KeySize = 4096
 )
 
 func main() {
@@ -14,12 +18,48 @@ func main() {
 
 	flag.Parse()
 
-	fmt.Printf("Generating %d pairs of keys for the clients and %d pairs of keys for the servers...", *clientCount, *serverCount)
+	fmt.Printf("Generating %d pairs of keys for the clients and %d pairs of keys for the servers... ", *clientCount, *serverCount)
 
 	keysFolder := "keys"
 	for i := range *clientCount {
 		privateKeyPath := "client_" + strconv.Itoa(i+1) + "_private.pem"
 		publicKetPath := "client_" + strconv.Itoa(i+1) + "_public.pem"
-		private, public, err := keygen.GenerateKeys()
+		private, public, err := keygen.GenerateKeys(KeySize)
+		if err != nil {
+			fmt.Print("Error generating keys: " + err.Error())
+			return
+		}
+		err = keygen.ExportPrivateKey(private, keysFolder, privateKeyPath)
+		if err != nil {
+			fmt.Print("Error exporting private key: " + err.Error())
+			return
+		}
+		err = keygen.ExportPublicKey(public, keysFolder, publicKetPath)
+		if err != nil {
+			fmt.Print("Error exporting public key: " + err.Error())
+			return
+		}
 	}
+
+	for i := range *serverCount {
+		privateKeyPath := "server_" + strconv.Itoa(i+1) + "_private.pem"
+		publicKetPath := "server_" + strconv.Itoa(i+1) + "_public.pem"
+		private, public, err := keygen.GenerateKeys(KeySize)
+		if err != nil {
+			fmt.Print("Error generating keys: " + err.Error())
+			return
+		}
+		err = keygen.ExportPrivateKey(private, keysFolder, privateKeyPath)
+		if err != nil {
+			fmt.Print("Error exporting private key: " + err.Error())
+			return
+		}
+		err = keygen.ExportPublicKey(public, keysFolder, publicKetPath)
+		if err != nil {
+			fmt.Print("Error exporting public key: " + err.Error())
+			return
+		}
+	}
+
+	fmt.Printf("Done.\n")
 }

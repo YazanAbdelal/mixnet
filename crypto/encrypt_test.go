@@ -1,29 +1,33 @@
 package crypto
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/YazanAbdelal/mixnet/keygen"
+)
 
 func TestLoad(t *testing.T) {
 	// create keys:
-	privateKey, publicKey, err := GenerateKeys(4096)
+	privateKey, publicKey, err := keygen.GenerateKeys(4096)
 
 	// save keys
-	err = ExportPrivateKey(privateKey, "tmp", "private.pem")
+	err = keygen.ExportPrivateKey(privateKey, "tmp", "private.pem")
 	if err != nil {
 		t.Error("Error exporting private key: " + err.Error())
 		return
 	}
-	err = ExportPublicKey(publicKey, "tmp", "public.pem")
+	err = keygen.ExportPublicKey(publicKey, "tmp", "public.pem")
 	if err != nil {
 		t.Error("Error exporting public key: " + err.Error())
 		return
 	}
 
 	// load keys
-	pri, err := LoadPrivateKey("tmp/private.pem")
+	pri, err := keygen.LoadPrivateKey("tmp/private.pem")
 	if err != nil {
 		t.Error("Error loading private key: " + err.Error())
 	}
-	pub, err := LoadPublicKey("tmp/public.pem")
+	pub, err := keygen.LoadPublicKey("tmp/public.pem")
 	if err != nil {
 		t.Error("Error loading public key: " + err.Error())
 	}
@@ -39,7 +43,7 @@ func TestLoad(t *testing.T) {
 
 func TestEncrypt(t *testing.T) {
 	// create keys:
-	privateKey, publicKey, err := GenerateKeys(4096)
+	privateKey, publicKey, err := keygen.GenerateKeys(4096)
 
 	msgBytes := []byte("Hello, world!")
 
