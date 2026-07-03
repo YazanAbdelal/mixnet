@@ -1,20 +1,16 @@
 version: '3.8'
 
 services:
-  # Mix Node 1
   mixnode-1:
     build:
       context: .
       dockerfile: server/Dockerfile
     volumes:
-      # Mount only the specific private key this node needs to decrypt messages
       - ./keys/server_1_private.pem:/etc/mixnet/keys/private.pem:ro
-      # Mount the entire public keys folder so nodes know about other nodes' public keys
       - ./keys/public:/etc/mixnet/keys/public:ro
     ports:
       - "5001:5001"
 
-  # Mix Node 2
   mixnode-2:
     build:
       context: .
@@ -25,16 +21,178 @@ services:
     ports:
       - "5002:5002"
 
-  # Client 1
+  mixnode-3:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    volumes:
+      - ./keys/server_3_private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/public:/etc/mixnet/keys/public:ro
+    ports:
+      - "5003:5003"
+
+  mixnode-4:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    volumes:
+      - ./keys/server_4_private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/public:/etc/mixnet/keys/public:ro
+    ports:
+      - "5004:5004"
+
+  mixnode-5:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    volumes:
+      - ./keys/server_5_private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/public:/etc/mixnet/keys/public:ro
+    ports:
+      - "5005:5005"
+
+  mixnode-6:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    volumes:
+      - ./keys/server_6_private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/public:/etc/mixnet/keys/public:ro
+    ports:
+      - "5006:5006"
+
+  mixnode-7:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    volumes:
+      - ./keys/server_7_private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/public:/etc/mixnet/keys/public:ro
+    ports:
+      - "5007:5007"
+
+  mixnode-8:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    volumes:
+      - ./keys/server_8_private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/public:/etc/mixnet/keys/public:ro
+    ports:
+      - "5008:5008"
+
+  mixnode-9:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    volumes:
+      - ./keys/server_9_private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/public:/etc/mixnet/keys/public:ro
+    ports:
+      - "5009:5009"
+
+  mixnode-10:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    volumes:
+      - ./keys/server_10_private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/public:/etc/mixnet/keys/public:ro
+    ports:
+      - "50010:50010"
+
   client-1:
     build:
       context: .
       dockerfile: client/Dockerfile
     volumes:
-      # Mount client 1's private key
       - ./keys/client_1_private.pem:/etc/mixnet/keys/private.pem:ro
-      # Mount all public keys so the client can construct sphinx packets / encrypt for servers
       - ./keys/public:/etc/mixnet/keys/public:ro
     depends_on:
       - mixnode-1
       - mixnode-2
+      - mixnode-3
+      - mixnode-4
+      - mixnode-5
+      - mixnode-6
+      - mixnode-7
+      - mixnode-8
+      - mixnode-9
+      - mixnode-10
+
+  client-2:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+    volumes:
+      - ./keys/client_2_private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/public:/etc/mixnet/keys/public:ro
+    depends_on:
+      - mixnode-1
+      - mixnode-2
+      - mixnode-3
+      - mixnode-4
+      - mixnode-5
+      - mixnode-6
+      - mixnode-7
+      - mixnode-8
+      - mixnode-9
+      - mixnode-10
+
+  client-3:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+    volumes:
+      - ./keys/client_3_private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/public:/etc/mixnet/keys/public:ro
+    depends_on:
+      - mixnode-1
+      - mixnode-2
+      - mixnode-3
+      - mixnode-4
+      - mixnode-5
+      - mixnode-6
+      - mixnode-7
+      - mixnode-8
+      - mixnode-9
+      - mixnode-10
+
+  client-4:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+    volumes:
+      - ./keys/client_4_private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/public:/etc/mixnet/keys/public:ro
+    depends_on:
+      - mixnode-1
+      - mixnode-2
+      - mixnode-3
+      - mixnode-4
+      - mixnode-5
+      - mixnode-6
+      - mixnode-7
+      - mixnode-8
+      - mixnode-9
+      - mixnode-10
+
+  client-5:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+    volumes:
+      - ./keys/client_5_private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/public:/etc/mixnet/keys/public:ro
+    depends_on:
+      - mixnode-1
+      - mixnode-2
+      - mixnode-3
+      - mixnode-4
+      - mixnode-5
+      - mixnode-6
+      - mixnode-7
+      - mixnode-8
+      - mixnode-9
+      - mixnode-10
+
