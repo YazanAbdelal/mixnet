@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package mixnet;
+
+option go_package = "github.com/YazanAbdelal/mixnet/proto;mixnet";
+
+message MessageRequest {
+    string payload = 1;
+}
+
+message MessageResponse {
+    bool success = 1;
+}
+
+service Messaging {
+    rpc PrintMessage(MessageRequest) returns (MessageResponse);
+}
