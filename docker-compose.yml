@@ -4,67 +4,37 @@ networks:
   mixnet:
 
 services:
-  mixnode-1:
-    build:
-      context: .
-      dockerfile: server/Dockerfile
-    volumes:
-      - ./keys/server_1_private.pem:/etc/mixnet/keys/private.pem:ro
-      - ./keys/public:/etc/mixnet/keys/public:ro
-    ports:
-      - "5001:5001"
-    networks:
-      - mixnet
-
-  mixnode-2:
-    build:
-      context: .
-      dockerfile: server/Dockerfile
-    volumes:
-      - ./keys/server_2_private.pem:/etc/mixnet/keys/private.pem:ro
-      - ./keys/public:/etc/mixnet/keys/public:ro
-    ports:
-      - "5002:5002"
-    networks:
-      - mixnet
-
-  mixnode-3:
-    build:
-      context: .
-      dockerfile: server/Dockerfile
-    volumes:
-      - ./keys/server_3_private.pem:/etc/mixnet/keys/private.pem:ro
-      - ./keys/public:/etc/mixnet/keys/public:ro
-    ports:
-      - "5003:5003"
-    networks:
-      - mixnet
-
   client-1:
+    container_name: client_1
     build:
       context: .
       dockerfile: client/Dockerfile
+    command: ["-port", "50051", "-dest", "client_2:50051"]
+    stdin_open: true
+    tty: true
     volumes:
       - ./keys/client_1_private.pem:/etc/mixnet/keys/private.pem:ro
       - ./keys/public:/etc/mixnet/keys/public:ro
-    depends_on:
+      - ./certs/client-1.crt:/etc/mixnet/certs/tls.crt:ro
+      - ./certs/client-1.key:/etc/mixnet/certs/tls.key:ro
+      - ./certs/ca.crt:/etc/mixnet/certs/ca.crt:ro
     networks:
       - mixnet
-      - mixnode-1
-      - mixnode-2
-      - mixnode-3
 
   client-2:
+    container_name: client_2
     build:
       context: .
       dockerfile: client/Dockerfile
+    command: ["-port", "50051", "-dest", "client_1:50051"]
+    stdin_open: true
+    tty: true
     volumes:
       - ./keys/client_2_private.pem:/etc/mixnet/keys/private.pem:ro
       - ./keys/public:/etc/mixnet/keys/public:ro
-    depends_on:
+      - ./certs/client-2.crt:/etc/mixnet/certs/tls.crt:ro
+      - ./certs/client-2.key:/etc/mixnet/certs/tls.key:ro
+      - ./certs/ca.crt:/etc/mixnet/certs/ca.crt:ro
     networks:
       - mixnet
-      - mixnode-1
-      - mixnode-2
-      - mixnode-3
 

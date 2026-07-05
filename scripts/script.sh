@@ -33,7 +33,7 @@ for ((i = 1; i <= num_clients; i++)); do
 done
 
 # generate docker-compose.yml based on the requested topology
-cat > "$script_dir/docker-compose.yml" <<COMPOSE_EOF
+cat > docker-compose.yml <<COMPOSE_EOF
 version: '3.8'
 
 networks:
@@ -43,7 +43,7 @@ services:
 COMPOSE_EOF
 
 for ((i = 1; i <= num_nodes; i++)); do
-  cat >> "$script_dir/docker-compose.yml" <<COMPOSE_EOF
+  cat >> docker-compose.yml <<COMPOSE_EOF
   mixnode-$i:
     build:
       context: .
@@ -63,11 +63,15 @@ COMPOSE_EOF
 done
 
 for ((i = 1; i <= num_clients; i++)); do
-  cat >> "$script_dir/docker-compose.yml" <<COMPOSE_EOF
+  clientPort=$((6000 + i))
+  cat >> docker-compose.yml <<COMPOSE_EOF
   client-$i:
     build:
       context: .
       dockerfile: client/Dockerfile
+    command: ["--port", "$clientPort"]
+    stdin_open: true
+    tty: true
     volumes:
       - ./keys/client_${i}_private.pem:/etc/mixnet/keys/private.pem:ro
       - ./keys/public:/etc/mixnet/keys/public:ro
@@ -75,11 +79,13 @@ for ((i = 1; i <= num_clients; i++)); do
       - ./certs/client-${i}.key:/etc/mixnet/certs/tls.key:ro
       - ./certs/ca.crt:/etc/mixnet/certs/ca.crt:ro
     depends_on:
-    networks:
-      - mixnet
 COMPOSE_EOF
   for ((j = 1; j <= num_nodes; j++)); do
-    echo "      - mixnode-$j" >> "$script_dir/docker-compose.yml"
+    echo "      - mixnode-$j" >> docker-compose.yml
   done
-  echo "" >> "$script_dir/docker-compose.yml"
+  cat >> docker-compose.yml <<COMPOSE_EOF
+    networks:
+      - mixnet
+
+COMPOSE_EOF
 done

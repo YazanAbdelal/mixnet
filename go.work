@@ -4,5 +4,6 @@ use (
 	./client
 	./crypto
 	./keygen
-	./server
+	./proto
+	// ./server
 )
