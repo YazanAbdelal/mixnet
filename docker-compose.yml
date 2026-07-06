@@ -4,11 +4,11 @@ networks:
 
 services:
   client-1:
-    container_name: client_1
+    container_name: client-1
     build:
       context: .
       dockerfile: client/Dockerfile
-    command: ["-port", "50050", "-dest", "client_2:50050"]
+    command: ["-port", "50050", "-dest", "client-2:50050"]
     stdin_open: true
     tty: true
     volumes:
@@ -21,11 +21,11 @@ services:
       - mixnet
 
   client-2:
-    container_name: client_2
+    container_name: client-2
     build:
       context: .
       dockerfile: client/Dockerfile
-    command: ["-port", "50050", "-dest", "client_1:50050"]
+    command: ["-port", "50050", "-dest", "client-1:50050"]
     stdin_open: true
     tty: true
     volumes:

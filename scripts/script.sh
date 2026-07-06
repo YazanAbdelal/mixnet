@@ -19,17 +19,15 @@ openssl req -x509 -new -nodes -key certs/ca.key -sha256 -days 365 -out certs/ca.
 for ((i = 1; i <= num_nodes; i++)); do
   name="mixnode-$i"
   openssl genrsa -out "certs/$name.key" 2048
-  underscore="${name//-/_}"
-  openssl req -new -key "certs/$name.key" -out "certs/$name.csr" -subj "/CN=$name" -addext "subjectAltName=DNS:$name,DNS:$underscore"
-  openssl x509 -req -in "certs/$name.csr" -CA certs/ca.crt -CAkey certs/ca.key -CAcreateserial -out "certs/$name.crt" -days 365 -sha256 -copy_extensions copy
+  openssl req -new -key "certs/$name.key" -out "certs/$name.csr" -subj "/CN=$name" -addext "subjectAltName=DNS:$name,DNS:$name" # -addext is for SAN
+  openssl x509 -req -in "certs/$name.csr" -CA certs/ca.crt -CAkey certs/ca.key -CAcreateserial -out "certs/$name.crt" -days 365 -sha256 -copy_extensions copy # -copy_extentions copies the SAN
   rm "certs/$name.csr"
 done
 
-for ((i = 1; i <= num_clients; i++)); dotls certificates
+for ((i = 1; i <= num_clients; i++)); do
   name="client-$i"
-  underscore="${name//-/_}"
   openssl genrsa -out "certs/$name.key" 2048
-  openssl req -new -key "certs/$name.key" -out "certs/$name.csr" -subj "/CN=$name" -addext "subjectAltName=DNS:$name,DNS:$underscore"
+  openssl req -new -key "certs/$name.key" -out "certs/$name.csr" -subj "/CN=$name" -addext "subjectAltName=DNS:$name,DNS:$name"
   openssl x509 -req -in "certs/$name.csr" -CA certs/ca.crt -CAkey certs/ca.key -CAcreateserial -out "certs/$name.crt" -days 365 -sha256 -copy_extensions copy
   rm "certs/$name.csr"
 done
@@ -46,7 +44,7 @@ COMPOSE_EOF
 for ((i = 1; i <= num_nodes; i++)); do
   cat >> docker-compose.yml <<COMPOSE_EOF
   mixnode-$i:
-    container_name: server_${i}
+    container_name: server-${i}
     build:
       context: .
       dockerfile: server/Dockerfile
@@ -68,7 +66,7 @@ for ((i = 1; i <= num_clients; i++)); do
   clientPort=$((50050 + i))
   cat >> docker-compose.yml <<COMPOSE_EOF
   client-$i:
-    container_name: client_${i}
+    container_name: client-${i}
     build:
       context: .
       dockerfile: client/Dockerfile
