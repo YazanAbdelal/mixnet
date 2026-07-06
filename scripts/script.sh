@@ -19,22 +19,23 @@ openssl req -x509 -new -nodes -key certs/ca.key -sha256 -days 365 -out certs/ca.
 for ((i = 1; i <= num_nodes; i++)); do
   name="mixnode-$i"
   openssl genrsa -out "certs/$name.key" 2048
-  openssl req -new -key "certs/$name.key" -out "certs/$name.csr" -subj "/CN=$name"
-  openssl x509 -req -in "certs/$name.csr" -CA certs/ca.crt -CAkey certs/ca.key -CAcreateserial -out "certs/$name.crt" -days 365 -sha256
+  underscore="${name//-/_}"
+  openssl req -new -key "certs/$name.key" -out "certs/$name.csr" -subj "/CN=$name" -addext "subjectAltName=DNS:$name,DNS:$underscore"
+  openssl x509 -req -in "certs/$name.csr" -CA certs/ca.crt -CAkey certs/ca.key -CAcreateserial -out "certs/$name.crt" -days 365 -sha256 -copy_extensions copy
   rm "certs/$name.csr"
 done
 
-for ((i = 1; i <= num_clients; i++)); do
+for ((i = 1; i <= num_clients; i++)); dotls certificates
   name="client-$i"
+  underscore="${name//-/_}"
   openssl genrsa -out "certs/$name.key" 2048
-  openssl req -new -key "certs/$name.key" -out "certs/$name.csr" -subj "/CN=$name"
-  openssl x509 -req -in "certs/$name.csr" -CA certs/ca.crt -CAkey certs/ca.key -CAcreateserial -out "certs/$name.crt" -days 365 -sha256
+  openssl req -new -key "certs/$name.key" -out "certs/$name.csr" -subj "/CN=$name" -addext "subjectAltName=DNS:$name,DNS:$underscore"
+  openssl x509 -req -in "certs/$name.csr" -CA certs/ca.crt -CAkey certs/ca.key -CAcreateserial -out "certs/$name.crt" -days 365 -sha256 -copy_extensions copy
   rm "certs/$name.csr"
 done
 
 # generate docker-compose.yml based on the requested topology
 cat > docker-compose.yml <<COMPOSE_EOF
-version: '3.8'
 
 networks:
   mixnet:
@@ -45,6 +46,7 @@ COMPOSE_EOF
 for ((i = 1; i <= num_nodes; i++)); do
   cat >> docker-compose.yml <<COMPOSE_EOF
   mixnode-$i:
+    container_name: server_${i}
     build:
       context: .
       dockerfile: server/Dockerfile
@@ -63,9 +65,10 @@ COMPOSE_EOF
 done
 
 for ((i = 1; i <= num_clients; i++)); do
-  clientPort=$((6000 + i))
+  clientPort=$((50050 + i))
   cat >> docker-compose.yml <<COMPOSE_EOF
   client-$i:
+    container_name: client_${i}
     build:
       context: .
       dockerfile: client/Dockerfile
