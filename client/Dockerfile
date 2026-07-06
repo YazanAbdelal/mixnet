@@ -17,8 +17,7 @@ COPY crypto/ ./crypto/
 COPY proto/ ./proto/
 COPY keygen/ ./keygen/
 
-RUN go build -o /app/client ./client
-
+RUN go build -o /app/client ./client/cmd
 FROM alpine:latest
 
 # `apk add` is used for downloading packages in Alpine Linux. 
