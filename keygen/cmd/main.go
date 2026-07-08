@@ -23,8 +23,8 @@ func main() {
 	keysFolder := "keys"
 	publicKeysFolder := keysFolder + "/public"
 	for i := range *clientCount {
-		privateKeyPath := "client_" + strconv.Itoa(i+1) + "_private.pem"
-		publicKetPath := "client_" + strconv.Itoa(i+1) + "_public.pem"
+		privateKeyPath := "client-" + strconv.Itoa(i+1) + "-private.pem"
+		publicKetPath := "client-" + strconv.Itoa(i+1) + "-public.pem"
 		private, public, err := keygen.GenerateKeys(KeySize)
 		if err != nil {
 			fmt.Print("Error generating keys: " + err.Error())
@@ -43,8 +43,8 @@ func main() {
 	}
 
 	for i := range *serverCount {
-		privateKeyPath := "server_" + strconv.Itoa(i+1) + "_private.pem"
-		publicKetPath := "server_" + strconv.Itoa(i+1) + "_public.pem"
+		privateKeyPath := "server-" + strconv.Itoa(i+1) + "-private.pem"
+		publicKetPath := "server-" + strconv.Itoa(i+1) + "-public.pem"
 		private, public, err := keygen.GenerateKeys(KeySize)
 		if err != nil {
 			fmt.Print("Error generating keys: " + err.Error())
