@@ -2,10 +2,11 @@ syntax = "proto3";
 
 package mixnet;
 
-option go_package = "github.com/YazanAbdelal/mixnet/proto;mixnet";
+option go_package = "github.com/YazanAbdelal/mixnet/proto/gen;gen";
 
 message MessageRequest {
-    string payload = 1;
+    bytes payload = 1;
+    string next_node = 2;
 }
 
 message MessageResponse {

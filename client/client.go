@@ -31,7 +31,7 @@ func (c *MixClient) PrintMessage(ctx context.Context, req *pb.MessageRequest) (*
 	log.Println("This was printed from inside PrintMessage().")
 
 	log.Println("Sending message to pipe.")
-	c.Pipe <- req.Payload
+	c.Pipe <- string(req.Payload)
 	log.Println("Back inside PrintMessage()")
 
 	response := &pb.MessageResponse{

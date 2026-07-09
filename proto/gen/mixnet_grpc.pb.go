@@ -4,7 +4,7 @@
 // - protoc             v3.21.12
 // source: mixnet.proto
 
-package mixnet
+package gen
 
 import (
 	context "context"

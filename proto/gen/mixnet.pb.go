@@ -4,7 +4,7 @@
 // 	protoc        v3.21.12
 // source: mixnet.proto
 
-package mixnet
+package gen
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -23,7 +23,8 @@ const (
 
 type MessageRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Payload       string                 `protobuf:"bytes,1,opt,name=payload,proto3" json:"payload,omitempty"`
+	Payload       []byte                 `protobuf:"bytes,1,opt,name=payload,proto3" json:"payload,omitempty"`
+	NextNode      string                 `protobuf:"bytes,2,opt,name=next_node,json=nextNode,proto3" json:"next_node,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -58,9 +59,16 @@ func (*MessageRequest) Descriptor() ([]byte, []int) {
 	return file_mixnet_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *MessageRequest) GetPayload() string {
+func (x *MessageRequest) GetPayload() []byte {
 	if x != nil {
 		return x.Payload
+	}
+	return nil
+}
+
+func (x *MessageRequest) GetNextNode() string {
+	if x != nil {
+		return x.NextNode
 	}
 	return ""
 }
@@ -113,13 +121,14 @@ var File_mixnet_proto protoreflect.FileDescriptor
 
 const file_mixnet_proto_rawDesc = "" +
 	"\n" +
-	"\fmixnet.proto\x12\x06mixnet\"*\n" +
+	"\fmixnet.proto\x12\x06mixnet\"G\n" +
 	"\x0eMessageRequest\x12\x18\n" +
-	"\apayload\x18\x01 \x01(\tR\apayload\"+\n" +
+	"\apayload\x18\x01 \x01(\fR\apayload\x12\x1b\n" +
+	"\tnext_node\x18\x02 \x01(\tR\bnextNode\"+\n" +
 	"\x0fMessageResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess2L\n" +
 	"\tMessaging\x12?\n" +
-	"\fPrintMessage\x12\x16.mixnet.MessageRequest\x1a\x17.mixnet.MessageResponseB-Z+github.com/YazanAbdelal/mixnet/proto;mixnetb\x06proto3"
+	"\fPrintMessage\x12\x16.mixnet.MessageRequest\x1a\x17.mixnet.MessageResponseB.Z,github.com/YazanAbdelal/mixnet/proto/gen;genb\x06proto3"
 
 var (
 	file_mixnet_proto_rawDescOnce sync.Once

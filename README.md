@@ -43,3 +43,20 @@ CA signs certificate using its private key: Takes in a CSR as input (`-req`), sp
 openssl x509 -req -in NODE_NAME.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out NODE_NAME.crt -days 365 -sha256
 ```
 ___
+
+## Generating gRPC code:
+First install protobuf compiler.
+Then install the go packages:
+``` sh
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+```
+then export the go binaries to PATH:
+```sh 
+export PATH="$PATH:$(go env GOPATH)/bin"
+```
+then run the following commands:
+```sh
+cd proto
+protoc --go_out=paths=source_relative:gen --go-grpc_out=paths=source_relative:gen mixnet.proto
+```
