@@ -108,6 +108,7 @@ func OnionEncrypt(msg string, dest string) ([]byte, error) {
 
 // DecryptLayer decrypts an onion layer using the private RSA key of the current node.
 // it returns the unencrypted content and the next node in the path.
+// if nextNode != "", the message is padded to size = MessageSize.
 func DecryptLayer(encryptedMsg []byte, privateKeyPath string) ([]byte, string, error) {
 	// first we load private RSA key
 	rsaKey, err := keygen.LoadPrivateKey(privateKeyPath)

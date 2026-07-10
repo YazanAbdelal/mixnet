@@ -35,7 +35,6 @@ generate_tls_certs() {
 
 generate_compose_file() {
 	cat > docker-compose.yml <<COMPOSE_EOF
-
 networks:
   mixnet:
 
@@ -57,7 +56,7 @@ COMPOSE_EOF
       - ./certs/mixnode-${i}.key:/etc/mixnet/certs/tls.key:ro
       - ./certs/ca.crt:/etc/mixnet/certs/ca.crt:ro
     ports:
-      - "$serverPort:40050"
+      - "$serverPort:50050"
     networks:
       - mixnet
 
@@ -65,14 +64,14 @@ COMPOSE_EOF
 	done
 
 	for ((i = 1; i <= num_clients; i++)); do
-		local clientPort=$((50050 + i))
+		# local clientPort=$((50050 + i))
 		cat >> docker-compose.yml <<COMPOSE_EOF
   client-$i:
     container_name: client-${i}
     build:
       context: .
       dockerfile: client/Dockerfile
-    command: ["--port", "$clientPort"]
+    command: ["--dest", ""]
     stdin_open: true
     tty: true
     volumes:

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 
 	pb "github.com/YazanAbdelal/mixnet/proto/gen"
@@ -15,4 +16,13 @@ func connectToPeer(dest string, creds credentials.TransportCredentials) pb.Messa
 		log.Fatal("Could not create a new client: " + err.Error())
 	}
 	return pb.NewMessagingClient(conn)
+}
+
+func sendToPeer(stub pb.MessagingClient, packet []byte) {
+	_, err := stub.ForwardMessage(context.Background(), &pb.MessageRequest{
+		Payload: []byte(packet),
+	})
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 }

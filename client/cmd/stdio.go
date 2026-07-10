@@ -2,13 +2,14 @@ package main
 
 import (
 	"bufio"
-	"context"
 	"log"
 	"os"
 
+	"github.com/YazanAbdelal/mixnet/crypto"
 	pb "github.com/YazanAbdelal/mixnet/proto/gen"
 )
 
+// readStdin reads from the standard input and sends the messages it receives to the sendLoop function through a receive only channel.
 func readStdin() <-chan string {
 
 	ch := make(chan string, 2)
@@ -32,17 +33,19 @@ func readStdin() <-chan string {
 	return ch
 }
 
-func sendLoop(stub pb.MessagingClient, input <-chan string) {
+// sendLoop reads messages (string) from the stdin, encrypts the message with onion and then forwards them to the next node in the mixnet using a gRPC stub.
+func sendLoop(stub pb.MessagingClient, dest string, input <-chan string) {
 	// keep reading from channel until it is closed.
 	// each message will be forwarded to the destination node, using a stub and calling a procedure remotely (RPC)
 	for msg := range input {
-		// TODO should encrypt and add padding before sending
-		_, err := stub.ForwardMessage(context.Background(), &pb.MessageRequest{
-			Payload: []byte(msg),
-		})
+		// encrypt the message using onion encryption and pad
+		packet, err := crypto.OnionEncrypt(msg, dest)
 		if err != nil {
-			log.Fatal(err.Error())
+			log.Fatal("Error encrypting message: " + err.Error())
 		}
+
+		// forward the message to the next node
+		sendToPeer(stub, packet)
 	}
 	log.Println("stdin reached EOF, send loop exiting")
 }

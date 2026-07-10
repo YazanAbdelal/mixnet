@@ -17,12 +17,13 @@ func main() {
 	go receiveMessages(mc)
 
 	// start a thread for reading from stdin and forwarding messages using RPC
-	stub := connectToPeer(*destName+":50050", mustLoadClientCreds())
+	// first node in the mix is always "server-1"
+	stub := connectToPeer("server-1:50050", mustLoadClientCreds())
 
 	// sending messages to dest like this:
 	// user inputs message using stdin   ---channel--->   sendLoop   ---stub--->   calls ForwardMessage method on the dest
 	// then the dest either prints (or stores) it, or forwards it to the next node if it is a mixnet.
-	go sendLoop(stub, readStdin()) // readStdin opens a channel from stdin to the sendLoop function
+	go sendLoop(stub, *destName, readStdin()) // readStdin opens a channel from stdin to the sendLoop function
 
 	// start the gRPC server in the main thread (forwards to recieveMessages thread)
 	runServer(mc, mustLoadServerCreds())

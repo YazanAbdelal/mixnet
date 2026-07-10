@@ -9,8 +9,10 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	"github.com/YazanAbdelal/mixnet/client"
+	"github.com/YazanAbdelal/mixnet/crypto"
 )
 
+// runServer starts listening to tcp requests on port 50050 and handles gRPS calls through a mTLS-secured channel.
 func runServer(mc *client.MixClient, creds credentials.TransportCredentials) {
 	// start a listener on the given port
 	lis, err := net.Listen("tcp", "0.0.0.0:50050")
@@ -30,10 +32,24 @@ func runServer(mc *client.MixClient, creds credentials.TransportCredentials) {
 	}
 }
 
+// receiveMessages receives gRPC messages from peers, decrypts them and forwards them to the next node if there is one.
 func receiveMessages(mc *client.MixClient) {
-	// print messages that were sent using the RPCs
 	for msg := range mc.Pipe {
-		log.Println("Printing that was received from the pipe.")
-		log.Println(msg)
+		// decrypt onion layer
+		decryptedMsg, nextNode, err := crypto.DecryptLayer(msg, "./keys/private.pem")
+		if err != nil {
+			log.Fatal("receiveMessages: Error decrypting onion layer: " + err.Error())
+			return
+		}
+		// if this is the last node, print message and return.
+		if nextNode == "" {
+			log.Printf("Recieved the following message: %q.", string(decryptedMsg))
+			return
+		} else { // if this is not the last node, forward to the next node
+			// create a stub
+			stub := connectToPeer(nextNode, mustLoadClientCreds())
+			// send packet to next node using the stub
+			sendToPeer(stub, decryptedMsg)
+		}
 	}
 }

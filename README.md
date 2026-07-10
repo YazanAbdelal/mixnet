@@ -76,3 +76,16 @@ When we are done adding all the layers, we pad the message with random bits up t
 2. We use l to separate the ciphertext from the padding, and we get c.
 3. We use the AES key to decrypt c, and get the content, and the next node.
 4. If the current node is the destination, we are done. Otherwise, we pad the content, and forward to the next node.
+
+## Sending Messages:
+**A message is sent from Client1 to Client2 as follows:**
+1. Client1 receives the message and from stdin through the receive only channel `input`.
+2. The sendLoop function reads the message from `input`, encrypts it using the **OnionEncrypt** function in the `crypto` module. Then it creates a stub to the first server in the mixnode and calls **ForwardMessage**.
+3. Each mix-node consecutively receieves the message from the previous node, decrypts a layer, and then forwards to the next layer until the message reaches the destination, who then prints or stores it.
+
+## Receiving Messages:
+**Every client starts a listener on port 50050, and assigns a gRPC handler to handle incoming gRPC calls through a mTLS-encrypted channel:**
+1. When a packet arrives at port 50050, the gRPC server handles it and calls the `ForwardMessage` method.
+2. `ForwardMessage` then hands the packet to the `receiveMessages` function using the `Pipe` channel.
+3. `receiveMessages` decrypts the outer layer , pads the message until it is of a preset length, and forwards it to the next Message.
+4. Steps 1, 2, 3 are repeated until the message arrives to its final destination, the last node in the circuit, only this time the message is not padded and forwarded, but printed or stored.

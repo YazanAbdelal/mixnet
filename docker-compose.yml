@@ -1,4 +1,3 @@
-
 networks:
   mixnet:
 
@@ -15,7 +14,39 @@ services:
       - ./certs/mixnode-1.key:/etc/mixnet/certs/tls.key:ro
       - ./certs/ca.crt:/etc/mixnet/certs/ca.crt:ro
     ports:
-      - "40051:40050"
+      - "40051:50050"
+    networks:
+      - mixnet
+
+  mixnode-2:
+    container_name: server-2
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    volumes:
+      - ./keys/server-2-private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/public:/etc/mixnet/keys/public:ro
+      - ./certs/mixnode-2.crt:/etc/mixnet/certs/tls.crt:ro
+      - ./certs/mixnode-2.key:/etc/mixnet/certs/tls.key:ro
+      - ./certs/ca.crt:/etc/mixnet/certs/ca.crt:ro
+    ports:
+      - "40052:50050"
+    networks:
+      - mixnet
+
+  mixnode-3:
+    container_name: server-3
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    volumes:
+      - ./keys/server-3-private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/public:/etc/mixnet/keys/public:ro
+      - ./certs/mixnode-3.crt:/etc/mixnet/certs/tls.crt:ro
+      - ./certs/mixnode-3.key:/etc/mixnet/certs/tls.key:ro
+      - ./certs/ca.crt:/etc/mixnet/certs/ca.crt:ro
+    ports:
+      - "40053:50050"
     networks:
       - mixnet
 
@@ -24,7 +55,7 @@ services:
     build:
       context: .
       dockerfile: client/Dockerfile
-    command: ["--port", "50051"]
+    command: ["--dest", "client-2"]
     stdin_open: true
     tty: true
     volumes:
@@ -35,6 +66,8 @@ services:
       - ./certs/ca.crt:/etc/mixnet/certs/ca.crt:ro
     depends_on:
       - mixnode-1
+      - mixnode-2
+      - mixnode-3
     networks:
       - mixnet
 
@@ -43,7 +76,7 @@ services:
     build:
       context: .
       dockerfile: client/Dockerfile
-    command: ["--port", "50052"]
+    command: ["--dest", "client-1"]
     stdin_open: true
     tty: true
     volumes:
@@ -54,6 +87,8 @@ services:
       - ./certs/ca.crt:/etc/mixnet/certs/ca.crt:ro
     depends_on:
       - mixnode-1
+      - mixnode-2
+      - mixnode-3
     networks:
       - mixnet
 
