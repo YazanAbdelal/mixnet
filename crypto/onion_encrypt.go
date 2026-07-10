@@ -80,19 +80,19 @@ func OnionEncrypt(msg string, dest string) ([]byte, error) {
 	msgBytes := []byte(msg)
 
 	// encrypt layer by layer
-	msgBytes, err := encryptOnionLayer(msgBytes, "", "keys/public/"+dest+"-public.pem")
+	msgBytes, err := encryptOnionLayer(msgBytes, "", "etc/mixnet/keys/public/"+dest+"-public.pem")
 	if err != nil {
 		return nil, errors.New("OnionEncrypt: error encrypting fourth layer: " + err.Error())
 	}
-	msgBytes, err = encryptOnionLayer(msgBytes, dest, "keys/public/server-3-public.pem")
+	msgBytes, err = encryptOnionLayer(msgBytes, dest, "etc/mixnet/keys/public/server-3-public.pem")
 	if err != nil {
 		return nil, errors.New("OnionEncrypt: error encrypting third layer: " + err.Error())
 	}
-	msgBytes, err = encryptOnionLayer(msgBytes, "server-3", "keys/public/server-2-public.pem")
+	msgBytes, err = encryptOnionLayer(msgBytes, "server-3", "etc/mixnet/keys/public/server-2-public.pem")
 	if err != nil {
 		return nil, errors.New("OnionEncrypt: error encrypting second layer: " + err.Error())
 	}
-	msgBytes, err = encryptOnionLayer(msgBytes, "server-2", "keys/public/server-1-public.pem")
+	msgBytes, err = encryptOnionLayer(msgBytes, "server-2", "etc/mixnet/keys/public/server-1-public.pem")
 	if err != nil {
 		return nil, errors.New("OnionEncrypt: error encrypting first layer: " + err.Error())
 	}

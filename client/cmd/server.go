@@ -36,7 +36,7 @@ func runServer(mc *client.MixClient, creds credentials.TransportCredentials) {
 func receiveMessages(mc *client.MixClient) {
 	for msg := range mc.Pipe {
 		// decrypt onion layer
-		decryptedMsg, nextNode, err := crypto.DecryptLayer(msg, "./keys/private.pem")
+		decryptedMsg, nextNode, err := crypto.DecryptLayer(msg, "/etc/mixnet/keys/private.pem")
 		if err != nil {
 			log.Fatal("receiveMessages: Error decrypting onion layer: " + err.Error())
 			return
@@ -44,10 +44,9 @@ func receiveMessages(mc *client.MixClient) {
 		// if this is the last node, print message and return.
 		if nextNode == "" {
 			log.Printf("Recieved the following message: %q.", string(decryptedMsg))
-			return
 		} else { // if this is not the last node, forward to the next node
 			// create a stub
-			stub := connectToPeer(nextNode, mustLoadClientCreds())
+			stub := connectToPeer(nextNode+":50050", mustLoadClientCreds())
 			// send packet to next node using the stub
 			sendToPeer(stub, decryptedMsg)
 		}

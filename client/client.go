@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"log"
 
 	pb "github.com/YazanAbdelal/mixnet/proto/gen"
 )
@@ -28,7 +27,6 @@ func (c *MixClient) ForwardMessage(ctx context.Context, req *pb.MessageRequest) 
 	}
 
 	// forward the mesage to the Pipe
-	log.Println("Sending message to pipe.")
 	c.Pipe <- req.Payload
 
 	response := &pb.MessageResponse{

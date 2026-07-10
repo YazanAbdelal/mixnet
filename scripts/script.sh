@@ -25,7 +25,7 @@ generate_tls_certs() {
 	generate_ca_cert
 
 	for ((i = 1; i <= num_nodes; i++)); do
-		generate_tls_cert "mixnode-$i"
+		generate_tls_cert "server-$i"
 	done
 
 	for ((i = 1; i <= num_clients; i++)); do
@@ -44,7 +44,7 @@ COMPOSE_EOF
 	for ((i = 1; i <= num_nodes; i++)); do
     local serverPort=$((40050 + i))
 		cat >> docker-compose.yml <<COMPOSE_EOF
-  mixnode-$i:
+  server-$i:
     container_name: server-${i}
     build:
       context: .
@@ -52,8 +52,8 @@ COMPOSE_EOF
     volumes:
       - ./keys/server-${i}-private.pem:/etc/mixnet/keys/private.pem:ro
       - ./keys/public:/etc/mixnet/keys/public:ro
-      - ./certs/mixnode-${i}.crt:/etc/mixnet/certs/tls.crt:ro
-      - ./certs/mixnode-${i}.key:/etc/mixnet/certs/tls.key:ro
+      - ./certs/server-${i}.crt:/etc/mixnet/certs/tls.crt:ro
+      - ./certs/server-${i}.key:/etc/mixnet/certs/tls.key:ro
       - ./certs/ca.crt:/etc/mixnet/certs/ca.crt:ro
     ports:
       - "$serverPort:50050"
@@ -83,7 +83,7 @@ COMPOSE_EOF
     depends_on:
 COMPOSE_EOF
 		for ((j = 1; j <= num_nodes; j++)); do
-			echo "      - mixnode-$j" >> docker-compose.yml
+			echo "      - server-$j" >> docker-compose.yml
 		done
 		cat >> docker-compose.yml <<COMPOSE_EOF
     networks:
