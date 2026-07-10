@@ -54,30 +54,63 @@ func encryptOnionLayer(content []byte, nextNode string, pathToKey string) ([]byt
 	return append(rsaCiphertext, ciphertext...), nil
 }
 
-// TODO write this function
-func OnionEncrypt(msg string, dest string, round int) ([]byte, error) {
+// padMessage pads a message with random bytes.
+// returns a padded message with size = MessageSize.
+func padMessage(msg []byte) ([]byte, error) {
+	// calculate padding size
+	padSize := MessageSize - len(msg)
+
+	// generate random padding
+	padding := make([]byte, padSize)
+	_, err := rand.Read(padding)
+	if err != nil {
+		return nil, errors.New("padMessage: error adding padding: " + err.Error())
+	}
+
+	// pad message
+	paddedMessage := append(msg, padding...)
+
+	return paddedMessage, nil
+}
+
+// OnionEncrypt encrypts a message with 4 onion layers and pads it.
+// returns a packet with size = MessageSize.
+func OnionEncrypt(msg string, dest string) ([]byte, error) {
 	// convert into bytes before
 	msgBytes := []byte(msg)
 
 	// encrypt layer by layer
-	// TODO remove '_' and handle errors
-	// TODO get the correct paths to the keys from the docker compose
-	msgBytes, _ = encryptOnionLayer(msgBytes, "", "public_keys/"+dest+"_public_key.pem")
-	msgBytes, _ = encryptOnionLayer(msgBytes, dest, "public_keys/server3_public_key.pem")
-	msgBytes, _ = encryptOnionLayer(msgBytes, "server-3", "public_keys/server2_public_key.pem")
-	msgBytes, _ = encryptOnionLayer(msgBytes, "servee-2", "public_keys/server1_public_key.pem")
+	msgBytes, err := encryptOnionLayer(msgBytes, "", "keys/public/"+dest+"-public.pem")
+	if err != nil {
+		return nil, errors.New("OnionEncrypt: error encrypting fourth layer: " + err.Error())
+	}
+	msgBytes, err = encryptOnionLayer(msgBytes, dest, "keys/public/server-3-public.pem")
+	if err != nil {
+		return nil, errors.New("OnionEncrypt: error encrypting third layer: " + err.Error())
+	}
+	msgBytes, err = encryptOnionLayer(msgBytes, "server-3", "keys/public/server-2-public.pem")
+	if err != nil {
+		return nil, errors.New("OnionEncrypt: error encrypting second layer: " + err.Error())
+	}
+	msgBytes, err = encryptOnionLayer(msgBytes, "server-2", "keys/public/server-1-public.pem")
+	if err != nil {
+		return nil, errors.New("OnionEncrypt: error encrypting first layer: " + err.Error())
+	}
 
-	// TODO handle padding here
+	// pad message
+	paddedMessage, err := padMessage(msgBytes)
+	if err != nil {
+		return nil, errors.New("OnionEncrypt: " + err.Error())
+	}
 
-	return msgBytes, nil
+	return paddedMessage, nil
 }
 
 // DecryptLayer decrypts an onion layer using the private RSA key of the current node.
-// it returns the unencrypted conent and the next node in the path.
-func DecryptLayer(encryptedMsg []byte) ([]byte, string, error) {
+// it returns the unencrypted content and the next node in the path.
+func DecryptLayer(encryptedMsg []byte, privateKeyPath string) ([]byte, string, error) {
 	// first we load private RSA key
-	keyPath := "./keys/private.pem"
-	rsaKey, err := keygen.LoadPrivateKey(keyPath)
+	rsaKey, err := keygen.LoadPrivateKey(privateKeyPath)
 	if err != nil {
 		return nil, "", errors.New("DecryptLayer: error loading private key: " + err.Error())
 	}
@@ -100,5 +133,15 @@ func DecryptLayer(encryptedMsg []byte) ([]byte, string, error) {
 		return nil, "", errors.New("DecryptLayer: error decrypting using ephemeral AES key: " + err.Error())
 	}
 
-	return content, nextNode, nil
+	// pad the message (if this is not the last node)
+	if nextNode == "" {
+		return content, nextNode, nil
+	}
+
+	paddedPacket, err := padMessage(content)
+	if err != nil {
+		return nil, "", errors.New("DecryptLayer: " + err.Error())
+	}
+
+	return paddedPacket, nextNode, nil
 }
