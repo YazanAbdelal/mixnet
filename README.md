@@ -64,10 +64,9 @@ protoc --go_out=paths=source_relative:gen --go-grpc_out=paths=source_relative:ge
 ## Onion Encryption:
 **Each layer is encrypted as follows:**
 1. First we generate an ephemeral AES key of length 32 Bytes.
-2. Then we use the AES key to encrypt the ciphertext we received from the previous layer (or the plaintext in case this is the innermost layer) along with the next node (<mark>Should use a protobuf struct for this</mark>) - call output of this stip 'c'.
-<mark>Another idea is to ditch the protobuf struct and include the next node information in the RSA encrypted bytes like in step 4.</mark>
+2. Then we use the AES key to encrypt the ciphertext we received from the previous layer (or the plaintext in case this is the innermost layer) - call output of this step 'c'.
 3. We then calculate l = len(c).
-4. We then encrypt both the AES key and l using the public RSA key of the next node.
+4. We then encrypt both the AES key, l and the next node's name using the public RSA key of the next node.
 5. The final output should be: [encrypted (AES key, l)][c], where the length of the first part is always 512B because we are using a 4096 bit (=512B) RSA key. 
 
 When we are done adding all the layers, we pad the message with random bits up to 4096 Bytes.
