@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"log"
 
 	pb "github.com/YazanAbdelal/mixnet/proto/gen"
 )
@@ -25,6 +26,8 @@ func (c *MixClient) ForwardMessage(ctx context.Context, req *pb.MessageRequest) 
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
+
+	log.Printf("Received a Packet of length: %v.", len(req.Payload))
 
 	// forward the mesage to the Pipe
 	c.Pipe <- req.Payload

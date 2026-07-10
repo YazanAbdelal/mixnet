@@ -42,7 +42,6 @@ services:
 COMPOSE_EOF
 
 	for ((i = 1; i <= num_nodes; i++)); do
-    local serverPort=$((40050 + i))
 		cat >> docker-compose.yml <<COMPOSE_EOF
   server-$i:
     container_name: server-${i}
@@ -55,8 +54,6 @@ COMPOSE_EOF
       - ./certs/server-${i}.crt:/etc/mixnet/certs/tls.crt:ro
       - ./certs/server-${i}.key:/etc/mixnet/certs/tls.key:ro
       - ./certs/ca.crt:/etc/mixnet/certs/ca.crt:ro
-    ports:
-      - "$serverPort:50050"
     networks:
       - mixnet
 

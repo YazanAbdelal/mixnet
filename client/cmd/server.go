@@ -48,6 +48,7 @@ func receiveMessages(mc *client.MixClient) {
 			// create a stub
 			stub := connectToPeer(nextNode+":50050", mustLoadClientCreds())
 			// send packet to next node using the stub
+			log.Printf("Sending packet of length: %v.", len(decryptedMsg))
 			sendToPeer(stub, decryptedMsg)
 		}
 	}
