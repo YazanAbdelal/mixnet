@@ -1,76 +1,96 @@
 package crypto
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
 	"encoding/binary"
-	"log"
-
-	"google.golang.org/protobuf/proto"
+	"errors"
 
 	"github.com/YazanAbdelal/mixnet/keygen"
-	pb "github.com/YazanAbdelal/mixnet/proto/gen"
 )
 
 const (
-	MessageSize = 4096
-	RSAKeySize  = 512
+	MessageSize            = 4096
+	RSAKeySize             = 512
+	AESKeySize             = 32
+	LengthOfCiphertextSize = 2
 )
 
-// ENCRYPTION:
-// each layer is encrypted as follows:
-// 1. first we generate an ephemeral
+// encryptOnionLayer adds a layer of encryption to the onion using hybrid encryption
+// it returns a ciphertext that includes an ephemeral AES key, the length of the encrypted content, the next node, and the AES encrypted content.
 func encryptOnionLayer(content []byte, nextNode string, pathToKey string) ([]byte, error) {
-	// // make a new layer struct that includes both the content of the message and the next node
-	// newLayer := &pb.OnionLayer{
-	// 	NextNode: nextNode,
-	// 	Payload:  content,
-	// }
-
-	// we will not use protobuf for the layers
-	// instead we will use fixed-sized fields for each message
-	// 2 bytes for the length of the message
-	prefix := make([]byte, 2)
-	binary.BigEndian.PutUint16(prefix, uint16(len(content))) // fill the prefix with the length of the content
-	packet := append(prefix, content...)
-
-	// convert struct into bytes
-	newLayerSerialized := serializeLayer(newLayer)
-
-	// encrypt the entire layer (content + next node) to protect path privacy
-	key, err := keygen.LoadPublicKey(pathToKey)
+	// first we generate an ephemeral AES key
+	aesKey, err := genAESKey(AESKeySize)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("encryptOnionLayer: error generating AES key: " + err.Error())
 	}
-	return EncryptMessage(newLayerSerialized, key, 32) // TODO is 32 good?
+
+	// then we encrypt the content using the AES key
+	ciphertext, err := encryptWithAES(content, aesKey)
+	if err != nil {
+		return nil, errors.New("encryptOnionLayer: error encrypting using AES key: " + err.Error())
+	}
+
+	// then we use the node's public RSA key to encrypt the the length of the AES key, the length of the ciphertext, and the next destination
+	// first we concatenate them
+	rsaPlaintext := make([]byte, 0, AESKeySize+LengthOfCiphertextSize+len(nextNode)) // length = 0, capacity = AESKeySize + LengthOfCiphertextSize + len(nextNode)
+	rsaPlaintext = append(rsaPlaintext, aesKey...)
+	rsaPlaintext = binary.BigEndian.AppendUint16(rsaPlaintext, uint16(len(ciphertext)))
+	rsaPlaintext = append(rsaPlaintext, []byte(nextNode)...)
+
+	// now we load the public RSA key of the target node
+	rsaKey, err := keygen.LoadPublicKey(pathToKey)
+	if err != nil {
+		return nil, errors.New("encryptOnionLayer: error loading public key: " + err.Error())
+	}
+
+	// now we encrypt using the target node's public RSA key
+	rsaCiphertext, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, rsaKey, rsaPlaintext, nil)
+	if err != nil {
+		return nil, errors.New("encryptOnionLayer: error encrypting with RSA key: " + err.Error())
+	}
+	return rsaCiphertext, nil
 }
 
-func OnionEncrypt(msg string, dest string, round int) []byte {
+// TODO write this function
+func OnionEncrypt(msg string, dest string, round int) ([]byte, error) {
 	// convert into bytes before
 	msgBytes := []byte(msg)
 
 	// encrypt layer by layer
 	// TODO remove '_' and handle errors
+	// TODO get the correct paths to the keys from the docker compose
 	msgBytes, _ = encryptOnionLayer(msgBytes, "", "public_keys/"+dest+"_public_key.pem")
 	msgBytes, _ = encryptOnionLayer(msgBytes, dest, "public_keys/server3_public_key.pem")
 	msgBytes, _ = encryptOnionLayer(msgBytes, "server-3", "public_keys/server2_public_key.pem")
 	msgBytes, _ = encryptOnionLayer(msgBytes, "servee-2", "public_keys/server1_public_key.pem")
 
-	return msgBytes
+	// TODO handle padding here
+
+	return msgBytes, nil
 }
 
-func DecryptLayer(encryptedMsg []byte) []byte {
-	// first decrypt
-	// TODO handle errors
-	privateKey, _ := keygen.LoadPrivateKey("private_key/" + "_private_key.pem")
-	serializedLayer, _ := DecryptMessage(encryptedMsg, privateKey)
-
-	// now we make an empty container for the OnionLayer struct
-	layer := &pb.OnionLayer{}
-
-	// bytes -> OnionLayer struct
-	err := proto.Unmarshal(serializedLayer, layer)
+// DecryptLayer decrypts an onion layer using the private RSA key of the current node.
+// it returns the ephemeral AES key, the length of the content that was encrypted with the AES key and the next node in the path.
+func DecryptLayer(encryptedMsg []byte) ([]byte, uint16, string, error) {
+	// first we load private RSA key
+	keyPath := "keys/private.pem"
+	rsaKey, err := keygen.LoadPrivateKey(keyPath)
 	if err != nil {
-		log.Fatalf("Error while umarshalling: %v\n", err)
+		return nil, 0, "", errors.New("DecryptLayer: error loading private key: " + err.Error())
 	}
 
-	return layer.Payload
+	// then we decrypt the packet using the private RSA key
+	rsaPlaintext, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, rsaKey, encryptedMsg[:RSAKeySize], nil)
+	if err != nil {
+		return nil, 0, "", errors.New("DecryptLayer: error decrypting using private RSA key: " + err.Error())
+	}
+
+	// then we extract the data from the plaintext
+	aesKey := rsaPlaintext[:AESKeySize]
+	aesLen := binary.BigEndian.Uint16(rsaPlaintext[AESKeySize : AESKeySize+LengthOfCiphertextSize])
+	route := string(rsaPlaintext[AESKeySize+LengthOfCiphertextSize:])
+
+	return aesKey, aesLen, route, nil
 }

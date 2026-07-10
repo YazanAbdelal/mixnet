@@ -14,8 +14,3 @@ message MessageRequest {
 message MessageResponse {
     bool success = 1;
 }
-
-message OnionLayer {
-    bytes content = 1;
-    string next_node =2;
-}
