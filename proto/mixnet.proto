@@ -2,17 +2,20 @@ syntax = "proto3";
 
 package mixnet;
 
-option go_package = "github.com/YazanAbdelal/mixnet/proto/gen;gen";
+option go_package = "github.com/YazanAbdelal/mixnet/proto;mixnet";
 
+service Messaging {
+    rpc ForwardMessage(MessageRequest) returns (MessageResponse);
+}
 message MessageRequest {
     bytes payload = 1;
-    string next_node = 2;
 }
 
 message MessageResponse {
     bool success = 1;
 }
 
-service Messaging {
-    rpc PrintMessage(MessageRequest) returns (MessageResponse);
+message OnionLayer {
+    bytes content = 1;
+    string next_node =2;
 }

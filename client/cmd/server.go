@@ -13,7 +13,7 @@ import (
 
 func runServer(mc *client.MixClient, creds credentials.TransportCredentials) {
 	// start a listener on the given port
-	lis, err := net.Listen("tcp", "0.0.0.0:"+mc.Port)
+	lis, err := net.Listen("tcp", "0.0.0.0:50050")
 	if err != nil {
 		log.Fatal("Error opening port for listening: " + err.Error())
 	}

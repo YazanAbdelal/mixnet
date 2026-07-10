@@ -60,3 +60,19 @@ then run the following commands:
 cd proto
 protoc --go_out=paths=source_relative:gen --go-grpc_out=paths=source_relative:gen mixnet.proto
 ```
+
+## Onion Encryption:
+**Each layer is encrypted as follows:**
+1. First we generate an ephemeral AES key of length 32 Bytes.
+2. Then we use the AES key to encrypt the ciphertext we received from the previous layer (or the plaintext in case this is the innermost layer) along with the next node (==Should use a protobuf struct for this==) - call output of this stip 'c'.
+3. We then calculate l = len(c).
+4. We then encrypt both the AES key and l using the public RSA key of the next node.
+5. The final output should be: [encrypted (AES key, l)][c], where the length of the first part is always 512B because we are using a 4096 bit (=512B) RSA key. 
+
+When we are done adding all the layers, we pad the message with random bits up to 4096 Bytes.
+
+**Each layer is decrypted as follows:**
+1. First we decrypt the first 512 Bytes of the packet using the current node's private key, and we get: AES key, l.
+2. We use l to separate the ciphertext from the padding, and we get c.
+3. We use the AES key to decrypt c, and get the content, and the next node.
+4. If the current node is the destination, we are done. Otherwise, we pad the content, and forward to the next node.

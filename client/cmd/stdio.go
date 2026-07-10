@@ -36,7 +36,10 @@ func sendLoop(stub pb.MessagingClient, input <-chan string) {
 	// keep reading from channel until it is closed.
 	// each message will be forwarded to the destination node, using a stub and calling a procedure remotely (RPC)
 	for msg := range input {
-		_, err := stub.PrintMessage(context.Background(), &pb.MessageRequest{Payload: []byte(msg)})
+		// TODO should encrypt and add padding before sending
+		_, err := stub.ForwardMessage(context.Background(), &pb.MessageRequest{
+			Payload: []byte(msg),
+		})
 		if err != nil {
 			log.Fatal(err.Error())
 		}

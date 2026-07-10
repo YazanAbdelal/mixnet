@@ -4,7 +4,7 @@
 // - protoc             v3.21.12
 // source: mixnet.proto
 
-package gen
+package mixnet
 
 import (
 	context "context"
@@ -19,14 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Messaging_PrintMessage_FullMethodName = "/mixnet.Messaging/PrintMessage"
+	Messaging_ForwardMessage_FullMethodName = "/mixnet.Messaging/ForwardMessage"
 )
 
 // MessagingClient is the client API for Messaging service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MessagingClient interface {
-	PrintMessage(ctx context.Context, in *MessageRequest, opts ...grpc.CallOption) (*MessageResponse, error)
+	ForwardMessage(ctx context.Context, in *MessageRequest, opts ...grpc.CallOption) (*MessageResponse, error)
 }
 
 type messagingClient struct {
@@ -37,10 +37,10 @@ func NewMessagingClient(cc grpc.ClientConnInterface) MessagingClient {
 	return &messagingClient{cc}
 }
 
-func (c *messagingClient) PrintMessage(ctx context.Context, in *MessageRequest, opts ...grpc.CallOption) (*MessageResponse, error) {
+func (c *messagingClient) ForwardMessage(ctx context.Context, in *MessageRequest, opts ...grpc.CallOption) (*MessageResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(MessageResponse)
-	err := c.cc.Invoke(ctx, Messaging_PrintMessage_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Messaging_ForwardMessage_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (c *messagingClient) PrintMessage(ctx context.Context, in *MessageRequest, 
 // All implementations must embed UnimplementedMessagingServer
 // for forward compatibility.
 type MessagingServer interface {
-	PrintMessage(context.Context, *MessageRequest) (*MessageResponse, error)
+	ForwardMessage(context.Context, *MessageRequest) (*MessageResponse, error)
 	mustEmbedUnimplementedMessagingServer()
 }
 
@@ -62,8 +62,8 @@ type MessagingServer interface {
 // pointer dereference when methods are called.
 type UnimplementedMessagingServer struct{}
 
-func (UnimplementedMessagingServer) PrintMessage(context.Context, *MessageRequest) (*MessageResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method PrintMessage not implemented")
+func (UnimplementedMessagingServer) ForwardMessage(context.Context, *MessageRequest) (*MessageResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ForwardMessage not implemented")
 }
 func (UnimplementedMessagingServer) mustEmbedUnimplementedMessagingServer() {}
 func (UnimplementedMessagingServer) testEmbeddedByValue()                   {}
@@ -86,20 +86,20 @@ func RegisterMessagingServer(s grpc.ServiceRegistrar, srv MessagingServer) {
 	s.RegisterService(&Messaging_ServiceDesc, srv)
 }
 
-func _Messaging_PrintMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Messaging_ForwardMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MessageRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MessagingServer).PrintMessage(ctx, in)
+		return srv.(MessagingServer).ForwardMessage(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Messaging_PrintMessage_FullMethodName,
+		FullMethod: Messaging_ForwardMessage_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MessagingServer).PrintMessage(ctx, req.(*MessageRequest))
+		return srv.(MessagingServer).ForwardMessage(ctx, req.(*MessageRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -112,8 +112,8 @@ var Messaging_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*MessagingServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "PrintMessage",
-			Handler:    _Messaging_PrintMessage_Handler,
+			MethodName: "ForwardMessage",
+			Handler:    _Messaging_ForwardMessage_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

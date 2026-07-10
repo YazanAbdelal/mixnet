@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"log"
 	"net"
 
@@ -32,7 +31,6 @@ func runServer(s *server.MixServer, creds credentials.TransportCredentials) {
 }
 
 func main() {
-	portPtr := flag.String("port", "50050", "the port number")
-	flag.Parse()
 
+	return
 }

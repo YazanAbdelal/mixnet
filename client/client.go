@@ -11,28 +11,25 @@ type MixClient struct {
 	pb.UnimplementedMessagingServer
 	ID   int
 	Port string
-	Pipe chan string
+	Pipe chan []byte
 }
 
 func NewMixClient(id int, port string) *MixClient {
 	return &MixClient{
 		ID:   id,
 		Port: port,
-		Pipe: make(chan string),
+		Pipe: make(chan []byte),
 	}
 }
 
-func (c *MixClient) PrintMessage(ctx context.Context, req *pb.MessageRequest) (*pb.MessageResponse, error) {
+func (c *MixClient) ForwardMessage(ctx context.Context, req *pb.MessageRequest) (*pb.MessageResponse, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 
-	log.Println(req.Payload)
-	log.Println("This was printed from inside PrintMessage().")
-
+	// forward the mesage to the Pipe
 	log.Println("Sending message to pipe.")
-	c.Pipe <- string(req.Payload)
-	log.Println("Back inside PrintMessage()")
+	c.Pipe <- req.Payload
 
 	response := &pb.MessageResponse{
 		Success: true,
