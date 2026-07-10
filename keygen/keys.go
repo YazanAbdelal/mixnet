@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	MessageSize int = 4096
+	MessageSize int = 8192
 )
 
 // GenerateKeys generates a pair of private and public RSA keys of the given size.

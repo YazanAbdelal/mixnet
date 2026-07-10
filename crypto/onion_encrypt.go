@@ -12,12 +12,12 @@ import (
 
 const (
 	MessageSize            = 4096
-	RSAKeySize             = 512
+	RSAKeySizeBytes        = 512
 	AESKeySize             = 32
 	LengthOfCiphertextSize = 2
 )
 
-// encryptOnionLayer adds a layer of encryption to the onion using hybrid encryption
+// encryptOnionLayer adds a layer of encryption to the onion using hybrid encryption.
 // it returns a ciphertext that includes an ephemeral AES key, the length of the encrypted content, the next node, and the AES encrypted content.
 func encryptOnionLayer(content []byte, nextNode string, pathToKey string) ([]byte, error) {
 	// first we generate an ephemeral AES key
@@ -46,11 +46,12 @@ func encryptOnionLayer(content []byte, nextNode string, pathToKey string) ([]byt
 	}
 
 	// now we encrypt using the target node's public RSA key
+	// the resulting ciphertext here is 512 bytes long because we used a 4096 bit long RSA key
 	rsaCiphertext, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, rsaKey, rsaPlaintext, nil)
 	if err != nil {
 		return nil, errors.New("encryptOnionLayer: error encrypting with RSA key: " + err.Error())
 	}
-	return rsaCiphertext, nil
+	return append(rsaCiphertext, ciphertext...), nil
 }
 
 // TODO write this function
@@ -72,25 +73,32 @@ func OnionEncrypt(msg string, dest string, round int) ([]byte, error) {
 }
 
 // DecryptLayer decrypts an onion layer using the private RSA key of the current node.
-// it returns the ephemeral AES key, the length of the content that was encrypted with the AES key and the next node in the path.
-func DecryptLayer(encryptedMsg []byte) ([]byte, uint16, string, error) {
+// it returns the unencrypted conent and the next node in the path.
+func DecryptLayer(encryptedMsg []byte) ([]byte, string, error) {
 	// first we load private RSA key
-	keyPath := "keys/private.pem"
+	keyPath := "./keys/private.pem"
 	rsaKey, err := keygen.LoadPrivateKey(keyPath)
 	if err != nil {
-		return nil, 0, "", errors.New("DecryptLayer: error loading private key: " + err.Error())
+		return nil, "", errors.New("DecryptLayer: error loading private key: " + err.Error())
 	}
 
 	// then we decrypt the packet using the private RSA key
-	rsaPlaintext, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, rsaKey, encryptedMsg[:RSAKeySize], nil)
+	rsaPlaintext, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, rsaKey, encryptedMsg[:RSAKeySizeBytes], nil)
 	if err != nil {
-		return nil, 0, "", errors.New("DecryptLayer: error decrypting using private RSA key: " + err.Error())
+		return nil, "", errors.New("DecryptLayer: error decrypting using private RSA key: " + err.Error())
 	}
 
 	// then we extract the data from the plaintext
 	aesKey := rsaPlaintext[:AESKeySize]
 	aesLen := binary.BigEndian.Uint16(rsaPlaintext[AESKeySize : AESKeySize+LengthOfCiphertextSize])
-	route := string(rsaPlaintext[AESKeySize+LengthOfCiphertextSize:])
+	nextNode := string(rsaPlaintext[AESKeySize+LengthOfCiphertextSize:])
 
-	return aesKey, aesLen, route, nil
+	// then we use the AES key to decrypt the encrypted content
+	aesCiphertext := encryptedMsg[RSAKeySizeBytes : RSAKeySizeBytes+int(aesLen)]
+	content, err := decryptAES(aesCiphertext, aesKey)
+	if err != nil {
+		return nil, "", errors.New("DecryptLayer: error decrypting using ephemeral AES key: " + err.Error())
+	}
+
+	return content, nextNode, nil
 }
