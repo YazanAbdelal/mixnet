@@ -28,7 +28,7 @@ func TestOnionLayerEncryption(t *testing.T) {
 	}
 }
 
-func TestOnionEncryt(t *testing.T) {
+func TestOnionEncrypt(t *testing.T) {
 	msg := "Hello, world!"
 	encryptedMsg, err := OnionEncrypt(msg, "client-2")
 	if err != nil {
@@ -64,4 +64,37 @@ func TestOnionEncryt(t *testing.T) {
 		return
 	}
 
+}
+
+func TestPacketSize(t *testing.T) {
+	msg := "Hello, world!"
+	encryptedMsg, err := OnionEncrypt(msg, "client-2")
+	if err != nil {
+		t.Error("Error encrypting message: " + err.Error())
+		return
+	}
+
+	decryptedMsg1, nextNode, err := DecryptLayer(encryptedMsg, "./keys/server-1-private.pem")
+	if err != nil {
+		t.Error("Error decrypting 1st layer: " + err.Error())
+		return
+	}
+	decryptedMsg2, nextNode, err := DecryptLayer(decryptedMsg1, "./keys/"+nextNode+"-private.pem")
+	if err != nil {
+		t.Error("Error decrypting 2nd layer: " + err.Error())
+		return
+	}
+	decryptedMsg3, nextNode, err := DecryptLayer(decryptedMsg2, "./keys/"+nextNode+"-private.pem")
+	if err != nil {
+		t.Error("Error decrypting 3rd layer: " + err.Error())
+		return
+	}
+	// no need to check last layer becasue the function does not pad when it reaches the target.
+
+	if len(encryptedMsg) != len(decryptedMsg1) ||
+		len(decryptedMsg1) != len(decryptedMsg2) ||
+		len(decryptedMsg2) != len(decryptedMsg3) {
+		t.Errorf("Packets are not of equal size: !(%v = %v = %v = %v)", len(encryptedMsg), len(decryptedMsg1), len(decryptedMsg2), len(decryptedMsg3))
+		return
+	}
 }
