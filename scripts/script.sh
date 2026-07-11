@@ -47,7 +47,7 @@ COMPOSE_EOF
     container_name: server-${i}
     build:
       context: .
-      dockerfile: client/Dockerfile
+      dockerfile: mixnode/Dockerfile
     command: ["--type", "server", "--name", "server-$i"]
     volumes:
       - ./keys/server-${i}-private.pem:/etc/mixnet/keys/private.pem:ro
@@ -67,7 +67,7 @@ COMPOSE_EOF
     container_name: client-${i}
     build:
       context: .
-      dockerfile: client/Dockerfile
+      dockerfile: mixnode/Dockerfile
     command: ["--type", "client", "--name", "client-$i", "--dest", ""]
     stdin_open: true
     tty: true

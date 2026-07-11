@@ -6,7 +6,7 @@ services:
     container_name: server-1
     build:
       context: .
-      dockerfile: client/Dockerfile
+      dockerfile: mixnode/Dockerfile
     command: ["--type", "server", "--name", "server-1"]
     volumes:
       - ./keys/server-1-private.pem:/etc/mixnet/keys/private.pem:ro
@@ -21,7 +21,7 @@ services:
     container_name: server-2
     build:
       context: .
-      dockerfile: client/Dockerfile
+      dockerfile: mixnode/Dockerfile
     command: ["--type", "server", "--name", "server-2"]
     volumes:
       - ./keys/server-2-private.pem:/etc/mixnet/keys/private.pem:ro
@@ -36,7 +36,7 @@ services:
     container_name: server-3
     build:
       context: .
-      dockerfile: client/Dockerfile
+      dockerfile: mixnode/Dockerfile
     command: ["--type", "server", "--name", "server-3"]
     volumes:
       - ./keys/server-3-private.pem:/etc/mixnet/keys/private.pem:ro
@@ -51,7 +51,7 @@ services:
     container_name: client-1
     build:
       context: .
-      dockerfile: client/Dockerfile
+      dockerfile: mixnode/Dockerfile
     command: ["--type", "client", "--name", "client-1", "--dest", "client-2"]
     stdin_open: true
     tty: true
@@ -72,7 +72,7 @@ services:
     container_name: client-2
     build:
       context: .
-      dockerfile: client/Dockerfile
+      dockerfile: mixnode/Dockerfile
     command: ["--type", "client", "--name", "client-2", "--dest", "client-1"]
     stdin_open: true
     tty: true
