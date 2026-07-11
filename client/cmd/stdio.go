@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/YazanAbdelal/mixnet/client"
 	"github.com/YazanAbdelal/mixnet/crypto"
-	pb "github.com/YazanAbdelal/mixnet/proto/gen"
 )
 
 // readStdin reads from the standard input and sends the messages it receives to the sendLoop function through a receive only channel.
@@ -34,18 +34,19 @@ func readStdin() <-chan string {
 }
 
 // sendLoop reads messages (string) from the stdin, encrypts the message with onion and then forwards them to the next node in the mixnet using a gRPC stub.
-func sendLoop(stub pb.MessagingClient, dest string, input <-chan string) {
+func sendLoop(client *client.MixNode, dest string, input <-chan string) {
 	// keep reading from channel until it is closed.
 	// each message will be forwarded to the destination node, using a stub and calling a procedure remotely (RPC)
 	for msg := range input {
 		// encrypt the message using onion encryption and pad
-		packet, err := crypto.OnionEncrypt(msg, dest)
+		// OnionEncrypt chooses a routing path and returns the first node in the path
+		packet, firstNode, err := crypto.OnionEncrypt(msg, dest)
 		if err != nil {
 			log.Fatal("Error encrypting message: " + err.Error())
 		}
 
-		// forward the message to the next node
-		sendToPeer(stub, packet)
+		// forward the message to the first node
+		sendToPeer(client.Stubs[firstNode], packet)
 	}
 	log.Println("stdin reached EOF, send loop exiting")
 }

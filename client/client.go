@@ -7,22 +7,22 @@ import (
 	pb "github.com/YazanAbdelal/mixnet/proto/gen"
 )
 
-type MixClient struct {
+type MixNode struct {
 	pb.UnimplementedMessagingServer
-	ID   int
-	Port string
-	Pipe chan []byte
+	Port  string
+	Pipe  chan []byte
+	Stubs map[string]pb.MessagingClient
 }
 
-func NewMixClient(id int, port string) *MixClient {
-	return &MixClient{
-		ID:   id,
-		Port: port,
-		Pipe: make(chan []byte),
+func NewMixNode(port string, stubs map[string]pb.MessagingClient) *MixNode {
+	return &MixNode{
+		Port:  port,
+		Pipe:  make(chan []byte),
+		Stubs: stubs,
 	}
 }
 
-func (c *MixClient) ForwardMessage(ctx context.Context, req *pb.MessageRequest) (*pb.MessageResponse, error) {
+func (c *MixNode) ForwardMessage(ctx context.Context, req *pb.MessageRequest) (*pb.MessageResponse, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}

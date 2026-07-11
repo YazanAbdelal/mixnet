@@ -6,6 +6,9 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
+	"fmt"
+
+	random "math/rand"
 
 	"github.com/YazanAbdelal/mixnet/keygen"
 )
@@ -73,37 +76,45 @@ func padMessage(msg []byte) ([]byte, error) {
 	return paddedMessage, nil
 }
 
+// getRandomPath takes a slice of server names and the destination's name, shuffles the servers and adds the destination to the path.
+func getRandomPath(servers []string, dest string) []string {
+	// shuffle the servers
+	random.Shuffle(len(servers), func(i int, j int) {
+		servers[i], servers[j] = servers[j], servers[i]
+	})
+
+	// add the dest and the empty string to the end
+	return append(servers, dest, "")
+}
+
 // OnionEncrypt encrypts a message with 4 onion layers and pads it.
-// returns a packet with size = MessageSize.
-func OnionEncrypt(msg string, dest string) ([]byte, error) {
+// returns a packet with size = MessageSize, and the first node in the mix.
+func OnionEncrypt(msg string, dest string) ([]byte, string, error) {
 	// convert into bytes before
 	msgBytes := []byte(msg)
 
-	// encrypt layer by layer
-	msgBytes, err := encryptOnionLayer(msgBytes, "", "etc/mixnet/keys/public/"+dest+"-public.pem")
-	if err != nil {
-		return nil, errors.New("OnionEncrypt: error encrypting fourth layer: " + err.Error())
-	}
-	msgBytes, err = encryptOnionLayer(msgBytes, dest, "etc/mixnet/keys/public/server-3-public.pem")
-	if err != nil {
-		return nil, errors.New("OnionEncrypt: error encrypting third layer: " + err.Error())
-	}
-	msgBytes, err = encryptOnionLayer(msgBytes, "server-3", "etc/mixnet/keys/public/server-2-public.pem")
-	if err != nil {
-		return nil, errors.New("OnionEncrypt: error encrypting second layer: " + err.Error())
-	}
-	msgBytes, err = encryptOnionLayer(msgBytes, "server-2", "etc/mixnet/keys/public/server-1-public.pem")
-	if err != nil {
-		return nil, errors.New("OnionEncrypt: error encrypting first layer: " + err.Error())
+	// choose path randomly
+	servers := []string{"server-1", "server-2", "server-3"}
+	randomPath := getRandomPath(servers, dest)
+
+	// encrypt inside-out
+	var err error
+	for i := len(randomPath) - 1; i >= 1; i-- {
+		nextNode := randomPath[i]
+		path := "/etc/mixnet/keys/public/" + randomPath[i-1] + "-public.pem"
+		msgBytes, err = encryptOnionLayer(msgBytes, nextNode, path)
+		if err != nil {
+			return nil, "", fmt.Errorf("OnionEncrypt: layer %d: %w", i, err)
+		}
 	}
 
 	// pad message
 	paddedMessage, err := padMessage(msgBytes)
 	if err != nil {
-		return nil, errors.New("OnionEncrypt: " + err.Error())
+		return nil, "", errors.New("OnionEncrypt: " + err.Error())
 	}
 
-	return paddedMessage, nil
+	return paddedMessage, randomPath[0], nil
 }
 
 // DecryptLayer decrypts an onion layer using the private RSA key of the current node.

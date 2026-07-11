@@ -47,7 +47,8 @@ COMPOSE_EOF
     container_name: server-${i}
     build:
       context: .
-      dockerfile: server/Dockerfile
+      dockerfile: client/Dockerfile
+    command: ["--type", "server", "--name", "server-$i"]
     volumes:
       - ./keys/server-${i}-private.pem:/etc/mixnet/keys/private.pem:ro
       - ./keys/public:/etc/mixnet/keys/public:ro
@@ -61,14 +62,13 @@ COMPOSE_EOF
 	done
 
 	for ((i = 1; i <= num_clients; i++)); do
-		# local clientPort=$((50050 + i))
 		cat >> docker-compose.yml <<COMPOSE_EOF
   client-$i:
     container_name: client-${i}
     build:
       context: .
       dockerfile: client/Dockerfile
-    command: ["--dest", ""]
+    command: ["--type", "client", "--name", "client-$i", "--dest", ""]
     stdin_open: true
     tty: true
     volumes:

@@ -13,9 +13,9 @@ import (
 )
 
 // runServer starts listening to tcp requests on port 50050 and handles gRPS calls through a mTLS-secured channel.
-func runServer(mc *client.MixClient, creds credentials.TransportCredentials) {
+func runServer(mc *client.MixNode, creds credentials.TransportCredentials) {
 	// start a listener on the given port
-	lis, err := net.Listen("tcp", "0.0.0.0:50050")
+	lis, err := net.Listen("tcp", "0.0.0.0:"+ListeningPort)
 	if err != nil {
 		log.Fatal("Error opening port for listening: " + err.Error())
 	}
@@ -33,23 +33,22 @@ func runServer(mc *client.MixClient, creds credentials.TransportCredentials) {
 }
 
 // receiveMessages receives gRPC messages from peers, decrypts them and forwards them to the next node if there is one.
-func receiveMessages(mc *client.MixClient) {
-	for msg := range mc.Pipe {
+func receiveMessages(client *client.MixNode, nodeType string) {
+	// TODO the nodeType is for determining whether to add the message to a batch or not.
+	for msg := range client.Pipe {
 		// decrypt onion layer
 		decryptedMsg, nextNode, err := crypto.DecryptLayer(msg, "/etc/mixnet/keys/private.pem")
 		if err != nil {
 			log.Fatal("receiveMessages: Error decrypting onion layer: " + err.Error())
 			return
 		}
+
 		// if this is the last node, print message and return.
 		if nextNode == "" {
 			log.Printf("Recieved the following message: %q.", string(decryptedMsg))
 		} else { // if this is not the last node, forward to the next node
-			// create a stub
-			stub := connectToPeer(nextNode+":50050", mustLoadClientCreds())
-			// send packet to next node using the stub
-			log.Printf("Sending packet of length: %v.", len(decryptedMsg))
-			sendToPeer(stub, decryptedMsg)
+			// send packet to next node using its stub
+			sendToPeer(client.Stubs[nextNode], decryptedMsg)
 		}
 	}
 }
