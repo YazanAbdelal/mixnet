@@ -8,7 +8,7 @@ Then run the mixnet using Docker compose: `docker compose up -d --build`
 In order to send messages, run the following command: `docker attach [CONTAINER_NAME]`, where `CONTAINER_NAME` is the name of the sender node.
 
 ## For mTLS Encryption:
-**The following is done automatically by the script when we run ./scripts/script.sh**
+*The following is done automatically by the script when we run ./scripts/script.sh*
 #### First we create a **Certificate Authority** (CA):
 generate a RSA key of length 2048 and save it in ca.key
 
