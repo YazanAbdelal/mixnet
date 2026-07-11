@@ -9,9 +9,10 @@ import (
 
 type MixNode struct {
 	pb.UnimplementedMessagingServer
-	Port  string
-	Pipe  chan []byte
-	Stubs map[string]pb.MessagingClient
+	Port      string
+	Pipe      chan []byte // for receiving packets
+	Stubs     map[string]pb.MessagingClient
+	BatchPipe chan []byte // for batching packets
 }
 
 func NewMixNode(port string, stubs map[string]pb.MessagingClient) *MixNode {

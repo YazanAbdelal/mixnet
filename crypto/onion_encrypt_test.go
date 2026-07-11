@@ -7,13 +7,13 @@ import (
 func TestOnionLayerEncryption(t *testing.T) {
 	msg := "Hello, world!"
 	nextNode := ""
-	encryptedMsg, err := encryptOnionLayer([]byte(msg), nextNode, "./keys/public/client-1-public.pem")
+	encryptedMsg, err := encryptOnionLayer([]byte(msg), nextNode, "./keys/public/client-1-public.pem", false)
 	if err != nil {
 		t.Error("Error encrypting message: " + err.Error())
 		return
 	}
 
-	decryptedMsg, decryptedNextNode, err := DecryptLayer(encryptedMsg, "./keys/client-1-private.pem")
+	decryptedMsg, decryptedNextNode, _, err := DecryptLayer(encryptedMsg, "./keys/client-1-private.pem")
 	if err != nil {
 		t.Error("Error decrypting message: " + err.Error())
 		return
@@ -36,22 +36,22 @@ func TestOnionEncrypt(t *testing.T) {
 		return
 	}
 
-	decryptedMsg, nextNode, err := DecryptLayer(encryptedMsg, "./keys/server-1-private.pem")
+	decryptedMsg, nextNode, _, err := DecryptLayer(encryptedMsg, "./keys/server-1-private.pem")
 	if err != nil {
 		t.Error("Error decrypting 1st layer: " + err.Error())
 		return
 	}
-	decryptedMsg, nextNode, err = DecryptLayer(decryptedMsg, "./keys/"+nextNode+"-private.pem")
+	decryptedMsg, nextNode, _, err = DecryptLayer(decryptedMsg, "./keys/"+nextNode+"-private.pem")
 	if err != nil {
 		t.Error("Error decrypting 2nd layer: " + err.Error())
 		return
 	}
-	decryptedMsg, nextNode, err = DecryptLayer(decryptedMsg, "./keys/"+nextNode+"-private.pem")
+	decryptedMsg, nextNode, _, err = DecryptLayer(decryptedMsg, "./keys/"+nextNode+"-private.pem")
 	if err != nil {
 		t.Error("Error decrypting 3rd layer: " + err.Error())
 		return
 	}
-	decryptedMsg, nextNode, err = DecryptLayer(decryptedMsg, "./keys/"+nextNode+"-private.pem")
+	decryptedMsg, nextNode, _, err = DecryptLayer(decryptedMsg, "./keys/"+nextNode+"-private.pem")
 	if err != nil {
 		t.Error("Error decrypting 4th layer: " + err.Error())
 		return
@@ -74,17 +74,17 @@ func TestPacketSize(t *testing.T) {
 		return
 	}
 
-	decryptedMsg1, nextNode, err := DecryptLayer(encryptedMsg, "./keys/server-1-private.pem")
+	decryptedMsg1, nextNode, _, err := DecryptLayer(encryptedMsg, "./keys/server-1-private.pem")
 	if err != nil {
 		t.Error("Error decrypting 1st layer: " + err.Error())
 		return
 	}
-	decryptedMsg2, nextNode, err := DecryptLayer(decryptedMsg1, "./keys/"+nextNode+"-private.pem")
+	decryptedMsg2, nextNode, _, err := DecryptLayer(decryptedMsg1, "./keys/"+nextNode+"-private.pem")
 	if err != nil {
 		t.Error("Error decrypting 2nd layer: " + err.Error())
 		return
 	}
-	decryptedMsg3, nextNode, err := DecryptLayer(decryptedMsg2, "./keys/"+nextNode+"-private.pem")
+	decryptedMsg3, nextNode, _, err := DecryptLayer(decryptedMsg2, "./keys/"+nextNode+"-private.pem")
 	if err != nil {
 		t.Error("Error decrypting 3rd layer: " + err.Error())
 		return

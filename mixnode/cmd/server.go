@@ -8,8 +8,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/YazanAbdelal/mixnet/mixnode"
 	"github.com/YazanAbdelal/mixnet/crypto"
+	"github.com/YazanAbdelal/mixnet/mixnode"
 )
 
 // runServer starts listening to tcp requests on port 50050 and handles gRPS calls through a mTLS-secured channel.
@@ -37,7 +37,13 @@ func receiveMessages(mc *mixnode.MixNode, nodeType string) {
 	// TODO the nodeType is for determining whether to add the message to a batch or not.
 	for msg := range mc.Pipe {
 		// decrypt onion layer
-		decryptedMsg, nextNode, err := crypto.DecryptLayer(msg, "/etc/mixnet/keys/private.pem")
+		decryptedMsg, nextNode, isDummy, err := crypto.DecryptLayer(msg, "/etc/mixnet/keys/private.pem")
+
+		// TODO make sure the handling of dummies makes sense
+		if isDummy {
+			continue // drop message
+		}
+
 		if err != nil {
 			log.Fatal("receiveMessages: Error decrypting onion layer: " + err.Error())
 			return
