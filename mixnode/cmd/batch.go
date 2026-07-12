@@ -8,6 +8,7 @@ import (
 	pb "github.com/YazanAbdelal/mixnet/proto/gen"
 )
 
+// batchFlusher receives packets from other nodes, and sends them periodically in batches.
 func batchFlusher(stubs map[string]pb.MessagingClient, batchChan <-chan mixnode.BatchEntry) {
 	batch := make([]mixnode.BatchEntry, 0, BatchSize)
 	ticker := time.NewTicker(time.Duration(BatchInterval) * time.Microsecond)
@@ -27,6 +28,7 @@ func batchFlusher(stubs map[string]pb.MessagingClient, batchChan <-chan mixnode.
 	}
 }
 
+// flushBatch sends each packet in the batch to its destiation.
 func flushBatch(stubs map[string]pb.MessagingClient, toSend []mixnode.BatchEntry) {
 	// shuffle batch first.
 	rand.Shuffle(len(toSend), func(i, j int) {

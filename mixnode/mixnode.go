@@ -26,6 +26,8 @@ func NewMixNode(port string, stubs map[string]pb.MessagingClient) *MixNode {
 	}
 }
 
+// ForwardMessage is called by gRPC clients.
+// receives the request and forwards the payload through a channel to be handled elsewhere.
 func (c *MixNode) ForwardMessage(ctx context.Context, req *pb.MessageRequest) (*pb.MessageResponse, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err

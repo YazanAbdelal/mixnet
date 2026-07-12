@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
+// connectToPeer connects to gRPC server and returns a stub for calling methods on the server remotely.
 func connectToPeer(dest string, creds credentials.TransportCredentials) pb.MessagingClient {
 	// start a gRPC client, and connect to dest through a TLS encrypted channel
 	conn, err := grpc.NewClient(dest, grpc.WithTransportCredentials(creds))
@@ -20,6 +21,7 @@ func connectToPeer(dest string, creds credentials.TransportCredentials) pb.Messa
 	return pb.NewMessagingClient(conn)
 }
 
+// sendToPeer calls the ForwardMessage to a gRPC server using the stub.
 func sendToPeer(stub pb.MessagingClient, packet []byte) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
@@ -27,6 +29,6 @@ func sendToPeer(stub pb.MessagingClient, packet []byte) {
 		Payload: []byte(packet),
 	})
 	if err != nil {
-		log.Fatal("sendToPeer: error forwarding message to peer: " + err.Error())
+		log.Print("sendToPeer: error forwarding message to peer: " + err.Error())
 	}
 }

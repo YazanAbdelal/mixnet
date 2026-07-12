@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	BatchSize     = 2
+	BatchSize     = 10
 	BatchInterval = 200
 	ListeningPort = "50050"
 )

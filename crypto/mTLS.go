@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
+// LoadServerTLSCredentials loads TLS certificate for the server.
 func LoadServerTLSCredentials(certFile, keyFile, caFile string) (credentials.TransportCredentials, error) {
 	serverCert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
@@ -34,6 +35,7 @@ func LoadServerTLSCredentials(certFile, keyFile, caFile string) (credentials.Tra
 	return credentials.NewTLS(tlsConfig), nil
 }
 
+// LoadClientTLSCredentials loads TLS cerificates for the client.
 func LoadClientTLSCredentials(certFile, keyFile, caFile string) (credentials.TransportCredentials, error) {
 	clientCert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
