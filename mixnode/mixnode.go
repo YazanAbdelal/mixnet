@@ -13,16 +13,18 @@ type BatchEntry struct {
 
 type MixNode struct {
 	pb.UnimplementedMessagingServer
-	Port  string
-	Pipe  chan []byte // for receiving packets
-	Stubs map[string]pb.MessagingClient
+	Port        string
+	Pipe        chan []byte // for receiving packets
+	Stubs       map[string]pb.MessagingClient
+	ReplayCache *ReplayCache
 }
 
 func NewMixNode(port string, stubs map[string]pb.MessagingClient) *MixNode {
 	return &MixNode{
-		Port:  port,
-		Pipe:  make(chan []byte, 100),
-		Stubs: stubs,
+		Port:        port,
+		Pipe:        make(chan []byte, 100),
+		Stubs:       stubs,
+		ReplayCache: NewReplayCache(),
 	}
 }
 
@@ -33,12 +35,13 @@ func (c *MixNode) ForwardMessage(ctx context.Context, req *pb.MessageRequest) (*
 		return nil, err
 	}
 
-	// forward the mesage to the Pipe
-	c.Pipe <- req.Payload
-
-	response := &pb.MessageResponse{
-		Success: true,
+	// drop replays silently -- always return success so the caller
+	// cannot distinguish a replay from a legitimate packet
+	if c.ReplayCache != nil && c.ReplayCache.IsReplay(req.Payload) {
+		return &pb.MessageResponse{Success: true}, nil
 	}
 
-	return response, nil
+	c.Pipe <- req.Payload
+
+	return &pb.MessageResponse{Success: true}, nil
 }
