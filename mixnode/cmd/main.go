@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	BatchSize     = 10
-	BatchInterval = 1000
+	BatchSize     = 2
+	BatchInterval = 200
 	ListeningPort = "50050"
 )
 
@@ -39,7 +39,8 @@ func main() {
 	mc := mixnode.NewMixNode(ListeningPort, stubs)
 
 	// start a thread for printing (or storing) or forwarding messages recieved using RPC
-	go receiveMessages(mc, *nodeType)
+	batchCh := make(chan mixnode.BatchEntry, 100)
+	go receiveMessages(mc, *nodeType, batchCh)
 
 	// only clients can send messages:
 	if *nodeType == "client" {
@@ -47,7 +48,9 @@ func main() {
 		// user inputs message using stdin   ---channel--->   sendLoop   ---stub--->   calls ForwardMessage method on the dest
 		// then the dest either prints (or stores) it, or forwards it to the next node if it is a mixnet.
 		go sendLoop(mc, *destName, readStdin()) // readStdin opens a channel from stdin to the sendLoop function
-	} // TODO should add an else for the server where we run a batch flusher goroutine.
+	} else {
+		go batchFlusher(stubs, batchCh)
+	}
 
 	// start the gRPC server in the main thread (forwards to recieveMessages thread)
 	runServer(mc, mustLoadServerCreds())

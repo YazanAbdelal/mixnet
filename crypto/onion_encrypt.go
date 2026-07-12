@@ -60,6 +60,7 @@ func encryptOnionLayer(content []byte, nextNode string, pathToKey string, isDumm
 	if err != nil {
 		return nil, errors.New("encryptOnionLayer: error encrypting with RSA key: " + err.Error())
 	}
+
 	return append(rsaCiphertext, ciphertext...), nil
 }
 
@@ -95,7 +96,7 @@ func getRandomPath(servers []string, dest string) []string {
 
 // OnionEncrypt encrypts a message with 4 onion layers and pads it.
 // returns a packet with size = MessageSize, and the first node in the mix.
-func OnionEncrypt(msg string, dest string) ([]byte, string, error) {
+func OnionEncrypt(msg string, dest string, isDummy bool) ([]byte, string, error) {
 	// convert into bytes before
 	msgBytes := []byte(msg)
 
@@ -108,7 +109,7 @@ func OnionEncrypt(msg string, dest string) ([]byte, string, error) {
 	for i := len(randomPath) - 1; i >= 1; i-- {
 		nextNode := randomPath[i]
 		path := "/etc/mixnet/keys/public/" + randomPath[i-1] + "-public.pem"
-		msgBytes, err = encryptOnionLayer(msgBytes, nextNode, path, false)
+		msgBytes, err = encryptOnionLayer(msgBytes, nextNode, path, isDummy)
 		if err != nil {
 			return nil, "", fmt.Errorf("OnionEncrypt: layer %d: %w", i, err)
 		}
@@ -130,13 +131,13 @@ func DecryptLayer(encryptedMsg []byte, privateKeyPath string) ([]byte, string, b
 	// first we load private RSA key
 	rsaKey, err := keygen.LoadPrivateKey(privateKeyPath)
 	if err != nil {
-		return nil, "", true, errors.New("DecryptLayer: error loading private key: " + err.Error())
+		return nil, "", false, errors.New("DecryptLayer: error loading private key: " + err.Error())
 	}
 
 	// then we decrypt the packet using the private RSA key
 	rsaPlaintext, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, rsaKey, encryptedMsg[:RSAKeySizeBytes], nil)
 	if err != nil {
-		return nil, "", true, errors.New("DecryptLayer: error decrypting using private RSA key: " + err.Error())
+		return nil, "", false, errors.New("DecryptLayer: error decrypting using private RSA key: " + err.Error())
 	}
 
 	// then we extract the data from the plaintext
@@ -145,26 +146,25 @@ func DecryptLayer(encryptedMsg []byte, privateKeyPath string) ([]byte, string, b
 	dummyFlag := rsaPlaintext[AESKeySize+LengthOfCiphertextSize]
 	nextNode := string(rsaPlaintext[AESKeySize+LengthOfCiphertextSize+DummyFlagLSize:])
 
-	// then we use the AES key to decrypt the encrypted content (only if the packet is not a dummy)
-	if dummyFlag == 1 { // drop dummy packet
-		return nil, "", true, nil
-	}
-
+	// use AES key to decrypt
 	aesCiphertext := encryptedMsg[RSAKeySizeBytes : RSAKeySizeBytes+int(aesLen)]
 	content, err := decryptAES(aesCiphertext, aesKey)
 	if err != nil {
-		return nil, "", true, errors.New("DecryptLayer: error decrypting using ephemeral AES key: " + err.Error())
+		return nil, "", false, errors.New("DecryptLayer: error decrypting using ephemeral AES key: " + err.Error())
 	}
 
-	// pad the message (if this is not the last node)
+	// final hop: drop dummy silently, display real
 	if nextNode == "" {
-		return content, nextNode, false, nil
+		if dummyFlag == 1 {
+			return nil, "", true, nil
+		}
+		return content, "", false, nil
 	}
 
+	// intermediate hop: re-pad and forward (real and dummy both go through)
 	paddedPacket, err := padMessage(content)
 	if err != nil {
-		return nil, "", true, errors.New("DecryptLayer: " + err.Error())
+		return nil, "", false, errors.New("DecryptLayer: " + err.Error())
 	}
-
 	return paddedPacket, nextNode, false, nil
 }

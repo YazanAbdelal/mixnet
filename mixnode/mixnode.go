@@ -2,17 +2,20 @@ package mixnode
 
 import (
 	"context"
-	"log"
 
 	pb "github.com/YazanAbdelal/mixnet/proto/gen"
 )
 
+type BatchEntry struct {
+	Packet   []byte
+	NextNode string
+}
+
 type MixNode struct {
 	pb.UnimplementedMessagingServer
-	Port      string
-	Pipe      chan []byte // for receiving packets
-	Stubs     map[string]pb.MessagingClient
-	BatchPipe chan []byte // for batching packets
+	Port  string
+	Pipe  chan []byte // for receiving packets
+	Stubs map[string]pb.MessagingClient
 }
 
 func NewMixNode(port string, stubs map[string]pb.MessagingClient) *MixNode {
@@ -27,8 +30,6 @@ func (c *MixNode) ForwardMessage(ctx context.Context, req *pb.MessageRequest) (*
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-
-	log.Printf("Received a Packet of length: %v.", len(req.Payload))
 
 	// forward the mesage to the Pipe
 	c.Pipe <- req.Payload

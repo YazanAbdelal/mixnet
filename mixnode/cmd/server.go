@@ -33,28 +33,33 @@ func runServer(mc *mixnode.MixNode, creds credentials.TransportCredentials) {
 }
 
 // receiveMessages receives gRPC messages from peers, decrypts them and forwards them to the next node if there is one.
-func receiveMessages(mc *mixnode.MixNode, nodeType string) {
-	// TODO the nodeType is for determining whether to add the message to a batch or not.
+func receiveMessages(mc *mixnode.MixNode, nodeType string, batchCh chan<- mixnode.BatchEntry) {
 	for msg := range mc.Pipe {
 		// decrypt onion layer
 		decryptedMsg, nextNode, isDummy, err := crypto.DecryptLayer(msg, "/etc/mixnet/keys/private.pem")
-
-		// TODO make sure the handling of dummies makes sense
-		if isDummy {
-			continue // drop message
-		}
-
 		if err != nil {
 			log.Fatal("receiveMessages: Error decrypting onion layer: " + err.Error())
 			return
 		}
 
-		// if this is the last node, print message and return.
+		// if this is the last node, print message or drop it.
 		if nextNode == "" {
-			log.Printf("Recieved the following message: %q.", string(decryptedMsg))
+			// if dummy and this is the last node, drop the message
+			if isDummy {
+				continue
+			}
+
+			// if not dummy, log message.
+			log.Printf("Received the following message: %q.", string(decryptedMsg))
+
 		} else { // if this is not the last node, forward to the next node
 			// send packet to next node using its stub
-			sendToPeer(mc.Stubs[nextNode], decryptedMsg)
+			if nodeType == "server" {
+				log.Printf("Receieved a packet with size = %v.", len(decryptedMsg))
+				batchCh <- mixnode.BatchEntry{Packet: decryptedMsg, NextNode: nextNode}
+			} else {
+				sendToPeer(mc.Stubs[nextNode], decryptedMsg)
+			}
 		}
 	}
 }

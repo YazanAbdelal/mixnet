@@ -4,9 +4,10 @@ import (
 	"bufio"
 	"log"
 	"os"
+	"time"
 
-	"github.com/YazanAbdelal/mixnet/mixnode"
 	"github.com/YazanAbdelal/mixnet/crypto"
+	"github.com/YazanAbdelal/mixnet/mixnode"
 )
 
 // readStdin reads from the standard input and sends the messages it receives to the sendLoop function through a receive only channel.
@@ -37,16 +38,22 @@ func readStdin() <-chan string {
 func sendLoop(mc *mixnode.MixNode, dest string, input <-chan string) {
 	// keep reading from channel until it is closed.
 	// each message will be forwarded to the destination node, using a stub and calling a procedure remotely (RPC)
-	for msg := range input {
-		// encrypt the message using onion encryption and pad
-		// OnionEncrypt chooses a routing path and returns the first node in the path
-		packet, firstNode, err := crypto.OnionEncrypt(msg, dest)
-		if err != nil {
-			log.Fatal("Error encrypting message: " + err.Error())
+	ticker := time.NewTicker(BatchInterval * time.Microsecond)
+	for range ticker.C {
+		select {
+		case msg := <-input:
+			packet, firstNode, err := crypto.OnionEncrypt(msg, dest, false)
+			if err != nil {
+				log.Fatal("Error encrypting message: " + err.Error())
+			}
+			sendToPeer(mc.Stubs[firstNode], packet)
+		default:
+			packet, firstNode, err := crypto.OnionEncrypt("__DUMMY__", dest, true)
+			if err != nil {
+				log.Fatal("Error encrypting message: " + err.Error())
+			}
+			sendToPeer(mc.Stubs[firstNode], packet)
 		}
 
-		// forward the message to the first node
-		sendToPeer(mc.Stubs[firstNode], packet)
 	}
-	log.Println("stdin reached EOF, send loop exiting")
 }

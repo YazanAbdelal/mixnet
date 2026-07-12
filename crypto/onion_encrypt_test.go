@@ -30,7 +30,7 @@ func TestOnionLayerEncryption(t *testing.T) {
 
 func TestOnionEncrypt(t *testing.T) {
 	msg := "Hello, world!"
-	encryptedMsg, nextNode, err := OnionEncrypt(msg, "client-2")
+	encryptedMsg, nextNode, err := OnionEncrypt(msg, "client-2", false)
 	if err != nil {
 		t.Error("Error encrypting message: " + err.Error())
 		return
@@ -68,7 +68,7 @@ func TestOnionEncrypt(t *testing.T) {
 
 func TestPacketSize(t *testing.T) {
 	msg := "Hello, world!"
-	encryptedMsg, nextNode, err := OnionEncrypt(msg, "client-2")
+	encryptedMsg, nextNode, err := OnionEncrypt(msg, "client-2", false)
 	if err != nil {
 		t.Error("Error encrypting message: " + err.Error())
 		return

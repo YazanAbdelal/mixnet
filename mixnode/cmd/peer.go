@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"time"
 
 	pb "github.com/YazanAbdelal/mixnet/proto/gen"
 
@@ -20,7 +21,9 @@ func connectToPeer(dest string, creds credentials.TransportCredentials) pb.Messa
 }
 
 func sendToPeer(stub pb.MessagingClient, packet []byte) {
-	_, err := stub.ForwardMessage(context.Background(), &pb.MessageRequest{
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	_, err := stub.ForwardMessage(ctx, &pb.MessageRequest{
 		Payload: []byte(packet),
 	})
 	if err != nil {
