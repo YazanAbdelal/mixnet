@@ -21,7 +21,7 @@ type MixNode struct {
 func NewMixNode(port string, stubs map[string]pb.MessagingClient) *MixNode {
 	return &MixNode{
 		Port:  port,
-		Pipe:  make(chan []byte),
+		Pipe:  make(chan []byte, 100),
 		Stubs: stubs,
 	}
 }
