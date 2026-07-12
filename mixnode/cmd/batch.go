@@ -8,21 +8,29 @@ import (
 	pb "github.com/YazanAbdelal/mixnet/proto/gen"
 )
 
-// batchFlusher receives packets from other nodes, and sends them periodically in batches.
-func batchFlusher(stubs map[string]pb.MessagingClient, batchChan <-chan mixnode.BatchEntry) {
-	batch := make([]mixnode.BatchEntry, 0, BatchSize)
-	ticker := time.NewTicker(time.Duration(BatchInterval) * time.Microsecond)
+// batchFlusher receives packets from other nodes, and sends them in batches.
+// A batch is flushed when either:
+//   - batchSize messages have been collected (threshold), or
+//   - flushTimeout has elapsed since the last flush (timeout)
+// The timeout guarantees forward progress even under low traffic.
+func batchFlusher(stubs map[string]pb.MessagingClient, batchChan <-chan mixnode.BatchEntry,
+	batchSize int, flushTimeout time.Duration) {
+	batch := make([]mixnode.BatchEntry, 0, batchSize)
+	ticker := time.NewTicker(flushTimeout)
 	defer ticker.Stop()
 
 	for {
-		select { // simultaneously check both channels
+		select {
 		case entry := <-batchChan:
 			batch = append(batch, entry)
+			if len(batch) >= batchSize {
+				go flushBatch(stubs, batch[:batchSize])
+				batch = batch[batchSize:]
+			}
 		case <-ticker.C:
-			if len(batch) >= BatchSize {
-				// running this as a goroutine is essential, without it we get a deadlock, and the context in sendToPeer runs out.
-				go flushBatch(stubs, batch[:BatchSize])
-				batch = batch[BatchSize:]
+			if len(batch) > 0 {
+				go flushBatch(stubs, batch)
+				batch = batch[:0]
 			}
 		}
 	}

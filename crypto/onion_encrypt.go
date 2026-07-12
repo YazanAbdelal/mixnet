@@ -83,26 +83,29 @@ func padMessage(msg []byte) ([]byte, error) {
 	return paddedMessage, nil
 }
 
-// getRandomPath takes a slice of server names and the destination's name, shuffles the servers and adds the destination to the path.
-func getRandomPath(servers []string, dest string) []string {
-	// shuffle the servers
-	random.Shuffle(len(servers), func(i int, j int) {
-		servers[i], servers[j] = servers[j], servers[i]
-	})
-
-	// add the dest and the empty string to the end
-	return append(servers, dest, "")
+// getRandomPath picks pathLen random servers from the pool, then appends the
+// destination node and the exit sentinel (""). The exit sentinel is what tells
+// the final node it has reached the destination — the destination itself does
+// not need to be a mix hop.
+func getRandomPath(servers []string, dest string, pathLen int) []string {
+	n := pathLen
+	if n > len(servers) {
+		n = len(servers)
+	}
+	perm := random.Perm(len(servers))
+	path := make([]string, n)
+	for i := range n {
+		path[i] = servers[perm[i]]
+	}
+	return append(path, dest, "")
 }
 
-// OnionEncrypt encrypts a message with 4 onion layers and pads it.
+// OnionEncrypt encrypts a message with onion layers and pads it.
 // returns a packet with size = MessageSize, and the first node in the mix.
-func OnionEncrypt(msg string, dest string, isDummy bool) ([]byte, string, error) {
-	// convert into bytes before
+func OnionEncrypt(msg string, dest string, isDummy bool, servers []string, pathLen int) ([]byte, string, error) {
 	msgBytes := []byte(msg)
 
-	// choose path randomly
-	servers := []string{"server-1", "server-2", "server-3"}
-	randomPath := getRandomPath(servers, dest)
+	randomPath := getRandomPath(servers, dest, pathLen)
 
 	// encrypt inside-out
 	var err error

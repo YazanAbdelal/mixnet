@@ -1,0 +1,8 @@
+{
+  "servers": ["server-1", "server-2", "server-3", "server-4", "server-5", "server-6", "server-7", "server-8", "server-9", "server-10"],
+  "clients": ["client-1", "client-2", "client-3", "client-4"],
+  "path_len": 3,
+  "batch_size": 10,
+  "client_tick_us": 200000,
+  "flush_timeout_ms": 1
+}
