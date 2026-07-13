@@ -18,7 +18,7 @@ func genAESKey(size int) ([]byte, error) {
 	// fill the slice with random bytes
 	_, err := io.ReadFull(rand.Reader, aesKey)
 	if err != nil {
-		return nil, errors.New("genAESKey:Error generating AESm key: " + err.Error())
+		return nil, errors.New("genAESKey:Error generating AES key: " + err.Error())
 	}
 
 	return aesKey, nil
@@ -40,7 +40,10 @@ func encryptWithAES(unencryptedBytes []byte, aesKey []byte) ([]byte, error) {
 
 	// generate random nonce to protect against repeat attacks
 	nonce := make([]byte, gcm.NonceSize())
-	io.ReadFull(rand.Reader, nonce)
+	_, err = io.ReadFull(rand.Reader, nonce)
+	if err != nil {
+		return nil, errors.New("encryptWithAES: Error generating random nonce: " + err.Error())
+	}
 
 	// encrypt and validate message
 	return gcm.Seal(nonce, nonce, unencryptedBytes, nil), nil

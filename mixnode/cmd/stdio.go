@@ -10,6 +10,10 @@ import (
 	"github.com/YazanAbdelal/mixnet/mixnode"
 )
 
+const (
+	PublicKeysPath = "/etc/mixnet/keys/public/"
+)
+
 // readStdin reads from the standard input and sends the messages it receives to the sendLoop function through a receive only channel.
 func readStdin() <-chan string {
 
@@ -40,14 +44,14 @@ func sendLoop(mc *mixnode.MixNode, dest string, input <-chan string, servers []s
 	for range ticker.C {
 		select {
 		case msg := <-input:
-			packet, firstNode, err := crypto.OnionEncrypt(msg, dest, false, servers, pathLen)
+			packet, firstNode, err := crypto.OnionEncrypt(msg, dest, false, servers, pathLen, PublicKeysPath)
 			if err != nil {
 				log.Printf("Error encrypting message: %v", err)
 				continue
 			}
 			sendToPeer(mc.Stubs[firstNode], packet)
 		default:
-			packet, firstNode, err := crypto.OnionEncrypt("__DUMMY__", dest, true, servers, pathLen)
+			packet, firstNode, err := crypto.OnionEncrypt("__DUMMY__", dest, true, servers, pathLen, PublicKeysPath)
 			if err != nil {
 				log.Printf("Error encrypting message: %v", err)
 				continue

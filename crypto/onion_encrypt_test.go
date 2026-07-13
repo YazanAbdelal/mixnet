@@ -1,19 +1,41 @@
 package crypto
 
 import (
+	"path/filepath"
 	"testing"
+
+	"github.com/YazanAbdelal/mixnet/keygen"
 )
 
+func generateKeyPair(t *testing.T, dir, name string) {
+	t.Helper()
+
+	privKey, pubKey, err := keygen.GenerateKeys(4096)
+	if err != nil {
+		t.Fatalf("GenerateKeys: %v", err)
+	}
+
+	if err := keygen.ExportPrivateKey(privKey, dir, name+"-private.pem"); err != nil {
+		t.Fatalf("ExportPrivateKey: %v", err)
+	}
+	if err := keygen.ExportPublicKey(pubKey, filepath.Join(dir, "public"), name+"-public.pem"); err != nil {
+		t.Fatalf("ExportPublicKey: %v", err)
+	}
+}
+
 func TestOnionLayerEncryption(t *testing.T) {
+	baseDir := t.TempDir()
+	generateKeyPair(t, baseDir, "client-1")
+
 	msg := "Hello, world!"
 	nextNode := ""
-	encryptedMsg, err := encryptOnionLayer([]byte(msg), nextNode, "./keys/public/client-1-public.pem", false)
+	encryptedMsg, err := encryptOnionLayer([]byte(msg), nextNode, filepath.Join(baseDir, "public", "client-1-public.pem"), false)
 	if err != nil {
 		t.Error("Error encrypting message: " + err.Error())
 		return
 	}
 
-	decryptedMsg, decryptedNextNode, _, err := DecryptLayer(encryptedMsg, "./keys/client-1-private.pem")
+	decryptedMsg, decryptedNextNode, _, err := DecryptLayer(encryptedMsg, filepath.Join(baseDir, "client-1-private.pem"))
 	if err != nil {
 		t.Error("Error decrypting message: " + err.Error())
 		return
@@ -29,74 +51,70 @@ func TestOnionLayerEncryption(t *testing.T) {
 }
 
 func TestOnionEncrypt(t *testing.T) {
+	baseDir := t.TempDir()
 	servers := []string{"server-1", "server-2", "server-3"}
+	allNodes := append(servers, "client-1")
+	for _, name := range allNodes {
+		generateKeyPair(t, baseDir, name)
+	}
+
 	msg := "Hello, world!"
-	encryptedMsg, nextNode, err := OnionEncrypt(msg, "client-2", false, servers, 3)
+	encryptedMsg, firstNode, err := OnionEncrypt(msg, "client-1", false, servers, 3, filepath.Join(baseDir, "public")+"/")
 	if err != nil {
 		t.Error("Error encrypting message: " + err.Error())
 		return
 	}
 
-	decryptedMsg, nextNode, _, err := DecryptLayer(encryptedMsg, "./keys/server-1-private.pem")
-	if err != nil {
-		t.Error("Error decrypting 1st layer: " + err.Error())
-		return
-	}
-	decryptedMsg, nextNode, _, err = DecryptLayer(decryptedMsg, "./keys/"+nextNode+"-private.pem")
-	if err != nil {
-		t.Error("Error decrypting 2nd layer: " + err.Error())
-		return
-	}
-	decryptedMsg, nextNode, _, err = DecryptLayer(decryptedMsg, "./keys/"+nextNode+"-private.pem")
-	if err != nil {
-		t.Error("Error decrypting 3rd layer: " + err.Error())
-		return
-	}
-	decryptedMsg, nextNode, _, err = DecryptLayer(decryptedMsg, "./keys/"+nextNode+"-private.pem")
-	if err != nil {
-		t.Error("Error decrypting 4th layer: " + err.Error())
-		return
+	nextNode := firstNode
+	for i := 0; i < 4; i++ {
+		decryptedMsg, nxt, _, err := DecryptLayer(encryptedMsg, filepath.Join(baseDir, nextNode+"-private.pem"))
+		if err != nil {
+			t.Errorf("Error decrypting layer %d: %v", i+1, err)
+			return
+		}
+		encryptedMsg = decryptedMsg
+		nextNode = nxt
 	}
 
-	decryptedMsgStr := string(decryptedMsg)
-
-	if decryptedMsgStr != msg {
-		t.Errorf("Decrypted message should be %q, got %q instead.", msg, decryptedMsgStr)
-		return
+	if string(encryptedMsg) != msg {
+		t.Errorf("Decrypted message should be %q, got %q instead.", msg, string(encryptedMsg))
 	}
-
 }
 
 func TestPacketSize(t *testing.T) {
+	baseDir := t.TempDir()
 	servers := []string{"server-1", "server-2", "server-3"}
+	allNodes := append(servers, "client-2")
+	for _, name := range allNodes {
+		generateKeyPair(t, baseDir, name)
+	}
+
 	msg := "Hello, world!"
-	encryptedMsg, nextNode, err := OnionEncrypt(msg, "client-2", false, servers, 3)
+	encryptedMsg, firstNode, err := OnionEncrypt(msg, "client-2", false, servers, 3, filepath.Join(baseDir, "public")+"/")
 	if err != nil {
 		t.Error("Error encrypting message: " + err.Error())
 		return
 	}
 
-	decryptedMsg1, nextNode, _, err := DecryptLayer(encryptedMsg, "./keys/server-1-private.pem")
-	if err != nil {
-		t.Error("Error decrypting 1st layer: " + err.Error())
-		return
-	}
-	decryptedMsg2, nextNode, _, err := DecryptLayer(decryptedMsg1, "./keys/"+nextNode+"-private.pem")
-	if err != nil {
-		t.Error("Error decrypting 2nd layer: " + err.Error())
-		return
-	}
-	decryptedMsg3, nextNode, _, err := DecryptLayer(decryptedMsg2, "./keys/"+nextNode+"-private.pem")
-	if err != nil {
-		t.Error("Error decrypting 3rd layer: " + err.Error())
-		return
-	}
-	// no need to check last layer becasue the function does not pad when it reaches the target.
+	var sizes []int
+	sizes = append(sizes, len(encryptedMsg))
 
-	if len(encryptedMsg) != len(decryptedMsg1) ||
-		len(decryptedMsg1) != len(decryptedMsg2) ||
-		len(decryptedMsg2) != len(decryptedMsg3) {
-		t.Errorf("Packets are not of equal size: !(%v = %v = %v = %v)", len(encryptedMsg), len(decryptedMsg1), len(decryptedMsg2), len(decryptedMsg3))
-		return
+	nextNode := firstNode
+	for i := 0; i < 3; i++ {
+		decryptedMsg, nxt, _, err := DecryptLayer(encryptedMsg, filepath.Join(baseDir, nextNode+"-private.pem"))
+		if err != nil {
+			t.Errorf("Error decrypting layer %d: %v", i+1, err)
+			return
+		}
+		sizes = append(sizes, len(decryptedMsg))
+		encryptedMsg = decryptedMsg
+		nextNode = nxt
+	}
+
+	for i := 1; i < len(sizes); i++ {
+		if sizes[i] != sizes[0] {
+			t.Errorf("Packets are not of equal size: %v", sizes)
+			return
+		}
 	}
 }

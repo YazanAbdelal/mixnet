@@ -102,7 +102,7 @@ func getRandomPath(servers []string, dest string, pathLen int) []string {
 
 // OnionEncrypt encrypts a message with onion layers and pads it.
 // returns a packet with size = MessageSize, and the first node in the mix.
-func OnionEncrypt(msg string, dest string, isDummy bool, servers []string, pathLen int) ([]byte, string, error) {
+func OnionEncrypt(msg string, dest string, isDummy bool, servers []string, pathLen int, publicKeysPath string) ([]byte, string, error) {
 	msgBytes := []byte(msg)
 
 	randomPath := getRandomPath(servers, dest, pathLen)
@@ -111,7 +111,7 @@ func OnionEncrypt(msg string, dest string, isDummy bool, servers []string, pathL
 	var err error
 	for i := len(randomPath) - 1; i >= 1; i-- {
 		nextNode := randomPath[i]
-		path := "/etc/mixnet/keys/public/" + randomPath[i-1] + "-public.pem"
+		path := publicKeysPath + randomPath[i-1] + "-public.pem"
 		msgBytes, err = encryptOnionLayer(msgBytes, nextNode, path, isDummy)
 		if err != nil {
 			return nil, "", fmt.Errorf("OnionEncrypt: layer %d: %w", i, err)
