@@ -36,7 +36,7 @@ func batchFlusher(stubs map[string]pb.MessagingClient, batchChan <-chan mixnode.
 	}
 }
 
-// flushBatch sends each packet in the batch to its destiation.
+// flushBatch sends each packet in the batch to its destination.
 func flushBatch(stubs map[string]pb.MessagingClient, toSend []mixnode.BatchEntry) {
 	// shuffle batch first.
 	rand.Shuffle(len(toSend), func(i, j int) {

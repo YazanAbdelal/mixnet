@@ -55,7 +55,7 @@ func TestEncrypt(t *testing.T) {
 
 	decryptedMessage, err := DecryptMessage(encryptedBytes, privateKey)
 	if err != nil {
-		t.Error("Error dectypting message: " + err.Error())
+		t.Error("Error decrypting message: " + err.Error())
 		return
 	}
 

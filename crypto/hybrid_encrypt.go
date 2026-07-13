@@ -66,7 +66,7 @@ func decryptAES(sealedMsg []byte, aesKey []byte) ([]byte, error) {
 	nonceSize := gcm.NonceSize()
 	nonce, encrypteBytes := sealedMsg[:nonceSize], sealedMsg[nonceSize:]
 
-	// unencrypt
+	// decrypt
 	decryptedBytes, err := gcm.Open(nil, nonce, encrypteBytes, nil)
 	if err != nil {
 		return nil, errors.New("decryptAES: Error decrypting bytes: " + err.Error())

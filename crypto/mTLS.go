@@ -35,7 +35,7 @@ func LoadServerTLSCredentials(certFile, keyFile, caFile string) (credentials.Tra
 	return credentials.NewTLS(tlsConfig), nil
 }
 
-// LoadClientTLSCredentials loads TLS cerificates for the client.
+// LoadClientTLSCredentials loads TLS certificates for the client.
 func LoadClientTLSCredentials(certFile, keyFile, caFile string) (credentials.TransportCredentials, error) {
 	clientCert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {

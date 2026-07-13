@@ -36,7 +36,7 @@ func encryptOnionLayer(content []byte, nextNode string, pathToKey string, isDumm
 		return nil, errors.New("encryptOnionLayer: error encrypting using AES key: " + err.Error())
 	}
 
-	// then we use the node's public RSA key to encrypt the the length of the AES key, the length of the ciphertext, the dummy flag and the next destination
+	// then we use the node's public RSA key to encrypt the length of the AES key, the length of the ciphertext, the dummy flag and the next destination
 	// first we concatenate them
 	rsaPlaintext := make([]byte, 0, AESKeySize+LengthOfCiphertextSize+DummyFlagLSize+len(nextNode)) // length = 0, capacity = AESKeySize + LengthOfCiphertextSize + len(nextNode)
 	rsaPlaintext = append(rsaPlaintext, aesKey...)

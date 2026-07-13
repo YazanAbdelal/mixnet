@@ -26,7 +26,7 @@ func runServer(mc *mixnode.MixNode, creds credentials.TransportCredentials) {
 
 	log.Println("listening on port " + mc.Port)
 
-	// start handling remote calls from gRPC clinets
+	// start handling remote calls from gRPC clients
 	if err := server.Serve(lis); err != nil {
 		log.Fatal("client failed to serve: " + err.Error())
 	}
@@ -55,7 +55,7 @@ func receiveMessages(mc *mixnode.MixNode, nodeType string, batchCh chan<- mixnod
 		} else { // if this is not the last node, forward to the next node
 			// send packet to next node using its stub
 			if nodeType == "server" {
-				log.Printf("Receieved a packet with size = %v.", len(decryptedMsg))
+				log.Printf("Received a packet with size = %v.", len(decryptedMsg))
 				batchCh <- mixnode.BatchEntry{Packet: decryptedMsg, NextNode: nextNode}
 			} else {
 				sendToPeer(mc.Stubs[nextNode], decryptedMsg)

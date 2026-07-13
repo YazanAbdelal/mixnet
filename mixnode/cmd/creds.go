@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-// mustLoadServerCreds loads TLS credintials for the server.
+// mustLoadServerCreds loads TLS credentials for the server.
 func mustLoadServerCreds() credentials.TransportCredentials {
 	creds, err := crypto.LoadServerTLSCredentials(
 		"/etc/mixnet/certs/tls.crt",
@@ -20,7 +20,7 @@ func mustLoadServerCreds() credentials.TransportCredentials {
 	return creds
 }
 
-// mustLoadClientCreds loads TLS credintials for the client.
+// mustLoadClientCreds loads TLS credentials for the client.
 func mustLoadClientCreds() credentials.TransportCredentials {
 	creds, err := crypto.LoadClientTLSCredentials(
 		"/etc/mixnet/certs/tls.crt",
