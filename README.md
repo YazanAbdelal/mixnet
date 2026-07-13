@@ -1,6 +1,6 @@
 ## mixnet
 
-A source-routed mix network (mixnet) written in Go, deployed via Docker Compose. Messages are wrapped in multiple layers of hybrid encryption (RSA-4096 + AES-256-GCM), routed through a random subset of mix servers, padded to a uniform size, and shuffled in batches — making sender-recipient linkability infeasible for a local adversary.
+A source-routed mix network (mixnet) written in Go, deployed via Docker Compose. Messages are wrapped in multiple layers of hybrid encryption (RSA-4096 + AES-256-GCM), routed through a random subset of mix servers, padded to a uniform size, and shuffled in batches, making sender-recipient linkability infeasible for a local adversary.
 
 ---
 
@@ -8,10 +8,10 @@ A source-routed mix network (mixnet) written in Go, deployed via Docker Compose.
 
 The script `./scripts/script.sh` generates everything needed to run the network:
 
-1. **RSA key pairs** (4096-bit) — one pair per node, used for onion encryption. Private keys stay with each node; public keys are shared into a `keys/public/` directory.
-2. **mTLS certificates** — a private Certificate Authority (CA) is created, then each node gets a certificate signed by the CA. These are used for authenticated, encrypted gRPC channels between nodes.
-3. **config.json** — lists all servers and clients, plus tunable parameters (path length, batch size, timing).
-4. **docker-compose.yml** — one service per node with the correct volumes, flags, and network configuration.
+1. **RSA key pairs** (4096-bit): one pair per node, used for onion encryption. Private keys stay with each node; public keys are shared into a `keys/public/` directory.
+2. **mTLS certificates**: a private Certificate Authority (CA) is created, then each node gets a certificate signed by the CA. These are used for authenticated, encrypted gRPC channels between nodes.
+3. **config.json**: lists all servers and clients, plus tunable parameters (path length, batch size, timing).
+4. **docker-compose.yml**: one service per node with the correct volumes, flags, and network configuration.
 
 After the script finishes, you must edit `docker-compose.yml` to set each client's `--dest` flag to its target (e.g., `--dest client-2`). Then build and start:
 
@@ -54,7 +54,7 @@ Each layer of the onion is encrypted using hybrid encryption:
 2. Decrypt them using the current node's **private RSA key** to recover: AES key, `l`, dummy flag, next node.
 3. Read the next `l` bytes as the AES ciphertext.
 4. Decrypt the AES ciphertext using the ephemeral AES key to recover the content.
-5. If the next node is empty (""), this is the final destination — print the content (or drop it if the dummy flag is set).
+5. If the next node is empty (""), this is the final destination, print the content (or drop it if the dummy flag is set).
 6. Otherwise, pad the content with random bytes to exactly 4096 bytes and forward to the next node.
 
 **Padding**: After all onion layers are applied, the outermost layer is padded to exactly 4096 bytes with random data. This is done before every hop as well. This ensures all packets are identical in size regardless of their plaintext length.
@@ -106,7 +106,7 @@ The message is sent to `randomPath[0]` (server-3).
 
 1. A `batchFlusher` goroutine collects `BatchEntry` items (packet + next node) from the batch channel.
 2. When `batchSize` entries are collected, it immediately spawns a goroutine to send them.
-3. A ticker fires every `flushTimeoutMs` — if any entries are sitting in the buffer, they are flushed as a partial batch to guarantee forward progress under low traffic.
+3. A ticker fires every `flushTimeoutMs`: if any entries are sitting in the buffer, they are flushed as a partial batch to guarantee forward progress under low traffic.
 4. Before forwarding, the batch is randomly shuffled so the order of output packets does not match the order of input packets.
 
 ---
@@ -125,7 +125,7 @@ Each node maintains an in-memory `ReplayCache`:
 
 ### Configuration Parameters
 
-All values live in `config.json` — edit and restart without rebuilding:
+All values live in `config.json`, edit and restart without rebuilding:
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|

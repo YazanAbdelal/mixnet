@@ -7,8 +7,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-
-	random "math/rand"
+	"math/big"
 
 	"github.com/YazanAbdelal/mixnet/keygen"
 )
@@ -83,21 +82,19 @@ func padMessage(msg []byte) ([]byte, error) {
 	return paddedMessage, nil
 }
 
-// getRandomPath picks pathLen random servers from the pool, then appends the
-// destination node and the exit sentinel (""). The exit sentinel is what tells
-// the final node it has reached the destination — the destination itself does
-// not need to be a mix hop.
+// getRandomPath selects a random path with the given length from the given servers.
 func getRandomPath(servers []string, dest string, pathLen int) []string {
-	n := pathLen
-	if n > len(servers) {
-		n = len(servers)
+	n := min(pathLen, len(servers))
+	shuffled := make([]string, len(servers))
+	copy(shuffled, servers)
+
+	for i := len(shuffled) - 1; i > 0; i-- {
+		j, _ := rand.Int(rand.Reader, big.NewInt(int64(i+1)))
+		idx := j.Int64()
+		shuffled[i], shuffled[idx] = shuffled[idx], shuffled[i]
 	}
-	perm := random.Perm(len(servers))
-	path := make([]string, n)
-	for i := range n {
-		path[i] = servers[perm[i]]
-	}
-	return append(path, dest, "")
+
+	return append(shuffled[:n], dest, "")
 }
 
 // OnionEncrypt encrypts a message with onion layers and pads it.

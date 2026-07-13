@@ -25,7 +25,7 @@ generate_ca_cert() {
 #  2. CREATE A TLS CERTIFICATE FOR A SINGLE NODE
 # -------------------------------------------------------
 # Each node (server or client) gets its own RSA key pair and a
-# certificate signed by the CA. These are used for mTLS — every
+# certificate signed by the CA. These are used for mTLS, every
 # gRPC connection between nodes is mutually authenticated.
 generate_tls_cert() {
 	local name="$1"
@@ -70,7 +70,7 @@ generate_tls_certs() {
 #  4. GENERATE NODE CONFIGURATION FILE
 # -------------------------------------------------------
 # Produces config.json listing all servers, clients, and tunable parameters.
-# The application loads this file at startup — no rebuild needed to
+# The application loads this file at startup, no rebuild needed to
 # change batch sizes, network timing, or path length.
 generate_config() {
 	servers_json=""
@@ -188,7 +188,7 @@ read -p "Flush timeout (ms before a partial batch is sent, default 500): " flush
 flush_timeout_ms=${flush_timeout_ms:-1}
 
 # step 1: generate RSA key pairs (private + public) for each node
-#         (used for onion encryption — not TLS)
+#         (used for onion encryption, not TLS)
 go run ./keygen/cmd -servers "$num_nodes" -clients "$num_clients"
 
 # step 2: generate mTLS certificates (CA + one per node)

@@ -1,7 +1,8 @@
 package main
 
 import (
-	"math/rand"
+	"crypto/rand"
+	"math/big"
 	"time"
 
 	"github.com/YazanAbdelal/mixnet/mixnode"
@@ -9,9 +10,7 @@ import (
 )
 
 // batchFlusher receives packets from other nodes, and sends them in batches.
-// A batch is flushed when either:
-//   - batchSize messages have been collected (threshold), or
-//   - flushTimeout has elapsed since the last flush (timeout)
+// A batch is flushed when either batchSize messages have been collected (threshold), or flushTimeout has elapsed since the last flush (timeout).
 // The timeout guarantees forward progress even under low traffic.
 func batchFlusher(stubs map[string]pb.MessagingClient, batchChan <-chan mixnode.BatchEntry,
 	batchSize int, flushTimeout time.Duration) {
@@ -38,12 +37,12 @@ func batchFlusher(stubs map[string]pb.MessagingClient, batchChan <-chan mixnode.
 
 // flushBatch sends each packet in the batch to its destination.
 func flushBatch(stubs map[string]pb.MessagingClient, toSend []mixnode.BatchEntry) {
-	// shuffle batch first.
-	rand.Shuffle(len(toSend), func(i, j int) {
-		toSend[i], toSend[j] = toSend[j], toSend[i]
-	})
+	for i := len(toSend) - 1; i > 0; i-- {
+		j, _ := rand.Int(rand.Reader, big.NewInt(int64(i+1)))
+		idx := j.Int64()
+		toSend[i], toSend[idx] = toSend[idx], toSend[i]
+	}
 
-	// send each packet to the respective node
 	for _, entry := range toSend {
 		sendToPeer(stubs[entry.NextNode], entry.Packet)
 	}
