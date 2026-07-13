@@ -4,3 +4,4 @@ certs/
 go.work
 go.work.sum
 README_ALT.md
+config.json
