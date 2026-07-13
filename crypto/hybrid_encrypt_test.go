@@ -7,32 +7,31 @@ import (
 )
 
 func TestLoad(t *testing.T) {
-	// create keys:
 	privateKey, publicKey, err := keygen.GenerateKeys(4096)
-
-	// save keys
-	err = keygen.ExportPrivateKey(privateKey, "tmp", "private.pem")
 	if err != nil {
-		t.Error("Error exporting private key: " + err.Error())
-		return
-	}
-	err = keygen.ExportPublicKey(publicKey, "tmp", "public.pem")
-	if err != nil {
-		t.Error("Error exporting public key: " + err.Error())
-		return
+		t.Fatalf("GenerateKeys: %v", err)
 	}
 
-	// load keys
-	pri, err := keygen.LoadPrivateKey("tmp/private.pem")
+	dir := t.TempDir()
+
+	err = keygen.ExportPrivateKey(privateKey, dir, "private.pem")
 	if err != nil {
-		t.Error("Error loading private key: " + err.Error())
+		t.Fatalf("ExportPrivateKey: %v", err)
 	}
-	pub, err := keygen.LoadPublicKey("tmp/public.pem")
+	err = keygen.ExportPublicKey(publicKey, dir, "public.pem")
 	if err != nil {
-		t.Error("Error loading public key: " + err.Error())
+		t.Fatalf("ExportPublicKey: %v", err)
 	}
 
-	// compare
+	pri, err := keygen.LoadPrivateKey(dir + "/private.pem")
+	if err != nil {
+		t.Fatalf("LoadPrivateKey: %v", err)
+	}
+	pub, err := keygen.LoadPublicKey(dir + "/public.pem")
+	if err != nil {
+		t.Fatalf("LoadPublicKey: %v", err)
+	}
+
 	if !privateKey.Equal(pri) {
 		t.Error("Loaded private key is not equal to the original key.")
 	}
