@@ -41,6 +41,8 @@ func readStdin() <-chan string {
 // sendLoop reads messages (string) from the stdin, encrypts the message with onion and then forwards them to the next node in the mixnet using a gRPC stub.
 func sendLoop(mc *mixnode.MixNode, dest string, input <-chan string, servers []string, pathLen int, clientTick time.Duration) {
 	ticker := time.NewTicker(clientTick)
+	defer ticker.Stop()
+
 	for range ticker.C {
 		select {
 		case msg := <-input:
