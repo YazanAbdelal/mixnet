@@ -13,7 +13,7 @@ import (
 )
 
 // runServer starts listening to tcp requests on port 50050 and handles gRPS calls through a mTLS-secured channel.
-func runServer(mc *mixnode.MixNode, creds credentials.TransportCredentials) {
+func runServer(mc *mixnode.MixNode, creds credentials.TransportCredentials) *grpc.Server {
 	// start a listener on the given port
 	lis, err := net.Listen("tcp", "0.0.0.0:"+ListeningPort)
 	if err != nil {
@@ -26,10 +26,14 @@ func runServer(mc *mixnode.MixNode, creds credentials.TransportCredentials) {
 
 	log.Println("listening on port " + mc.Port)
 
-	// start handling remote calls from gRPC clients
-	if err := server.Serve(lis); err != nil {
-		log.Fatal("client failed to serve: " + err.Error())
-	}
+	go func() {
+		// start handling remote calls from gRPC clients
+		if err := server.Serve(lis); err != nil {
+			log.Fatal("client failed to serve: " + err.Error())
+		}
+	}()
+
+	return server
 }
 
 // receiveMessages receives gRPC messages from peers, decrypts them and forwards them to the next node if there is one.

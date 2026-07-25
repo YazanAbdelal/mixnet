@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/YazanAbdelal/mixnet/mixnode"
@@ -38,6 +42,11 @@ func main() {
 	nodes := append(cfg.Servers, cfg.Clients...)
 	stubs := initStubs(*nodeName, nodes)
 
+	// this context is for handling SIGINT and SIGTERM
+	// we send it to the runServer function so it can exit gracefully (no messages missed) in case it receives any of these signals.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	mc := mixnode.NewMixNode(ListeningPort, stubs)
 
 	batchCh := make(chan mixnode.BatchEntry, 100)
@@ -51,5 +60,10 @@ func main() {
 		go batchFlusher(stubs, batchCh, cfg.BatchSize, flushTimeout)
 	}
 
-	runServer(mc, mustLoadServerCreds())
+	server := runServer(mc, mustLoadServerCreds())
+	<-ctx.Done()
+	log.Println("Shutting down...")
+
+	// wait until all messages are received and then shuts down
+	server.GracefulStop()
 }
