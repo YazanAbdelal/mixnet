@@ -8,11 +8,11 @@ import (
 
 func TestECCEncrypt(t *testing.T) {
 	// gen keys
-	privateKey1, _, err := keygen.GenerateECCKeys()
+	privateKey1, publicKey1, err := keygen.GenerateECCKeys()
 	if err != nil {
 		t.Error("TestECCEncrypt: " + err.Error())
 	}
-	_, publicKey2, err := keygen.GenerateECCKeys()
+	privateKey2, publicKey2, err := keygen.GenerateECCKeys()
 	if err != nil {
 		t.Error("TestECCEncrypt: " + err.Error())
 	}
@@ -27,7 +27,7 @@ func TestECCEncrypt(t *testing.T) {
 	}
 
 	// decrypt
-	decryptedMsg, err := DecryptWithECC(encrypedMsg, privateKey1, publicKey2)
+	decryptedMsg, err := DecryptWithECC(encrypedMsg, privateKey2, publicKey1)
 	if err != nil {
 		t.Error("TestECCEncrypt: " + err.Error())
 	}
