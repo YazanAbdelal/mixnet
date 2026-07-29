@@ -7,18 +7,18 @@ import (
 	"github.com/YazanAbdelal/mixnet/keygen"
 )
 
-func generateKeyPair(t *testing.T, dir, name string) {
+func generateKeyPair(t testing.TB, dir, name string) {
 	t.Helper()
 
-	privKey, pubKey, err := keygen.GenerateKeys(4096)
+	privKey, pubKey, err := keygen.GenerateRSAKeys(4096)
 	if err != nil {
 		t.Fatalf("GenerateKeys: %v", err)
 	}
 
-	if err := keygen.ExportPrivateKey(privKey, dir, name+"-private.pem"); err != nil {
+	if err := keygen.ExportPrivateRSAKey(privKey, dir, name+"-private.pem"); err != nil {
 		t.Fatalf("ExportPrivateKey: %v", err)
 	}
-	if err := keygen.ExportPublicKey(pubKey, filepath.Join(dir, "public"), name+"-public.pem"); err != nil {
+	if err := keygen.ExportPublicRSAKey(pubKey, filepath.Join(dir, "public"), name+"-public.pem"); err != nil {
 		t.Fatalf("ExportPublicKey: %v", err)
 	}
 }
@@ -115,6 +115,58 @@ func TestPacketSize(t *testing.T) {
 		if sizes[i] != sizes[0] {
 			t.Errorf("Packets are not of equal size: %v", sizes)
 			return
+		}
+	}
+}
+
+func BenchmarkOnionEncrypt(b *testing.B) {
+	baseDir := b.TempDir()
+	servers := []string{"server-1", "server-2", "server-3"}
+	allNodes := append(servers, "client-1")
+	for _, name := range allNodes {
+		generateKeyPair(b, baseDir, name)
+	}
+
+	msg := "Hello, world! This is a benchmark test message to measure performance."
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _, err := OnionEncrypt(msg, "client-1", false, servers, 3, filepath.Join(baseDir, "public")+"/")
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkFullRoundTrip(b *testing.B) {
+	baseDir := b.TempDir()
+	servers := []string{"server-1", "server-2", "server-3"}
+	allNodes := append(servers, "client-1")
+	for _, name := range allNodes {
+		generateKeyPair(b, baseDir, name)
+	}
+
+	msg := "Hello, world! This is a benchmark test message to measure performance."
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		encryptedMsg, firstNode, err := OnionEncrypt(msg, "client-1", false, servers, 3, filepath.Join(baseDir, "public")+"/")
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		nextNode := firstNode
+		for j := 0; j < 4; j++ {
+			decryptedMsg, nxt, _, err := DecryptLayer(encryptedMsg, filepath.Join(baseDir, nextNode+"-private.pem"))
+			if err != nil {
+				b.Fatalf("Error decrypting layer %d: %v", j+1, err)
+			}
+			encryptedMsg = decryptedMsg
+			nextNode = nxt
+		}
+
+		if string(encryptedMsg) != msg {
+			b.Fatalf("Decrypted message should be %q, got %q instead.", msg, string(encryptedMsg))
 		}
 	}
 }

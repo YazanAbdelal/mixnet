@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"math/big"
 	"time"
@@ -12,7 +13,7 @@ import (
 // batchFlusher receives packets from other nodes, and sends them in batches.
 // A batch is flushed when either batchSize messages have been collected (threshold), or flushTimeout has elapsed since the last flush (timeout).
 // The timeout guarantees forward progress even under low traffic.
-func batchFlusher(stubs map[string]pb.MessagingClient, batchChan <-chan mixnode.BatchEntry,
+func batchFlusher(ctx context.Context, stubs map[string]pb.MessagingClient, batchChan <-chan mixnode.BatchEntry,
 	batchSize int, flushTimeout time.Duration) {
 	batch := make([]mixnode.BatchEntry, 0, batchSize)
 	ticker := time.NewTicker(flushTimeout)
@@ -31,6 +32,12 @@ func batchFlusher(stubs map[string]pb.MessagingClient, batchChan <-chan mixnode.
 				go flushBatch(stubs, batch)
 				batch = batch[:0]
 			}
+		case <-ctx.Done():
+			// flush remaining batch before exiting
+			if len(batch) > 0 {
+				flushBatch(stubs, batch)
+			}
+			return
 		}
 	}
 }

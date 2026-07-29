@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net"
 
@@ -37,8 +38,8 @@ func runServer(mc *mixnode.MixNode, creds credentials.TransportCredentials) *grp
 }
 
 // receiveMessages receives gRPC messages from peers, decrypts them and forwards them to the next node if there is one.
-func receiveMessages(mc *mixnode.MixNode, nodeType string, batchCh chan<- mixnode.BatchEntry) {
-	for msg := range mc.Pipe {
+func receiveMessages(ctx context.Context, mc *mixnode.MixNode, nodeType string, batchCh chan<- mixnode.BatchEntry) {
+	processMsg := func(msg []byte) {
 		// decrypt onion layer
 		decryptedMsg, nextNode, isDummy, err := crypto.DecryptLayer(msg, "/etc/mixnet/keys/private.pem")
 		if err != nil {
@@ -50,7 +51,7 @@ func receiveMessages(mc *mixnode.MixNode, nodeType string, batchCh chan<- mixnod
 		if nextNode == "" {
 			// if dummy and this is the last node, drop the message
 			if isDummy {
-				continue
+				return
 			}
 
 			// if not dummy, log message.
@@ -63,6 +64,23 @@ func receiveMessages(mc *mixnode.MixNode, nodeType string, batchCh chan<- mixnod
 				batchCh <- mixnode.BatchEntry{Packet: decryptedMsg, NextNode: nextNode}
 			} else {
 				sendToPeer(mc.Stubs[nextNode], decryptedMsg)
+			}
+		}
+	}
+
+	for {
+		select {
+		case msg := <-mc.Pipe:
+			processMsg(msg)
+		case <-ctx.Done():
+			// drain remaining messages in the pipe before exiting
+			for {
+				select {
+				case msg := <-mc.Pipe:
+					processMsg(msg)
+				default:
+					return
+				}
 			}
 		}
 	}

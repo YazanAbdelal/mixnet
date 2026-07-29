@@ -25,17 +25,17 @@ func main() {
 	for i := range *clientCount {
 		privateKeyPath := "client-" + strconv.Itoa(i+1) + "-private.pem"
 		publicKetPath := "client-" + strconv.Itoa(i+1) + "-public.pem"
-		private, public, err := keygen.GenerateKeys(KeySize)
+		private, public, err := keygen.GenerateRSAKeys(KeySize)
 		if err != nil {
 			fmt.Print("Error generating keys: " + err.Error())
 			return
 		}
-		err = keygen.ExportPrivateKey(private, keysFolder, privateKeyPath)
+		err = keygen.ExportPrivateRSAKey(private, keysFolder, privateKeyPath)
 		if err != nil {
 			fmt.Print("Error exporting private key: " + err.Error())
 			return
 		}
-		err = keygen.ExportPublicKey(public, publicKeysFolder, publicKetPath)
+		err = keygen.ExportPublicRSAKey(public, publicKeysFolder, publicKetPath)
 		if err != nil {
 			fmt.Print("Error exporting public key: " + err.Error())
 			return
@@ -45,17 +45,17 @@ func main() {
 	for i := range *serverCount {
 		privateKeyPath := "server-" + strconv.Itoa(i+1) + "-private.pem"
 		publicKetPath := "server-" + strconv.Itoa(i+1) + "-public.pem"
-		private, public, err := keygen.GenerateKeys(KeySize)
+		private, public, err := keygen.GenerateRSAKeys(KeySize)
 		if err != nil {
 			fmt.Print("Error generating keys: " + err.Error())
 			return
 		}
-		err = keygen.ExportPrivateKey(private, keysFolder, privateKeyPath)
+		err = keygen.ExportPrivateRSAKey(private, keysFolder, privateKeyPath)
 		if err != nil {
 			fmt.Print("Error exporting private key: " + err.Error())
 			return
 		}
-		err = keygen.ExportPublicKey(public, publicKeysFolder, publicKetPath)
+		err = keygen.ExportPublicRSAKey(public, publicKeysFolder, publicKetPath)
 		if err != nil {
 			fmt.Print("Error exporting public key: " + err.Error())
 			return

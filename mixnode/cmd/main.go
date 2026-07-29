@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -43,27 +44,46 @@ func main() {
 	stubs := initStubs(*nodeName, nodes)
 
 	// this context is for handling SIGINT and SIGTERM
-	// we send it to the runServer function so it can exit gracefully (no messages missed) in case it receives any of these signals.
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+	// we send it to the goroutines so they can exit gracefully (no messages missed) in case the process receives any of these signals.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	mc := mixnode.NewMixNode(ListeningPort, stubs)
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+
+	mc := mixnode.NewMixNode(ctx, ListeningPort, stubs)
 
 	batchCh := make(chan mixnode.BatchEntry, 100)
-	go receiveMessages(mc, *nodeType, batchCh)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		receiveMessages(ctx, mc, *nodeType, batchCh)
+	}()
 
 	if *nodeType == "client" {
 		clientTick := time.Duration(cfg.ClientTickUs) * time.Microsecond
-		go sendLoop(mc, *destName, readStdin(), cfg.Servers, cfg.PathLen, clientTick)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			sendLoop(ctx, mc, *destName, readStdin(), cfg.Servers, cfg.PathLen, clientTick)
+		}()
 	} else {
 		flushTimeout := time.Duration(cfg.FlushTimeoutMs) * time.Millisecond
-		go batchFlusher(stubs, batchCh, cfg.BatchSize, flushTimeout)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			batchFlusher(ctx, stubs, batchCh, cfg.BatchSize, flushTimeout)
+		}()
 	}
 
 	server := runServer(mc, mustLoadServerCreds())
-	<-ctx.Done()
+	<-sigCh
 	log.Println("Shutting down...")
 
 	// wait until all messages are received and then shuts down
 	server.GracefulStop()
+	cancel()
+	wg.Wait()
 }

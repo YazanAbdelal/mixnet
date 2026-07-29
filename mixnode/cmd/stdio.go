@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"log"
 	"os"
 	"time"
@@ -39,27 +40,31 @@ func readStdin() <-chan string {
 }
 
 // sendLoop reads messages (string) from the stdin, encrypts the message with onion and then forwards them to the next node in the mixnet using a gRPC stub.
-func sendLoop(mc *mixnode.MixNode, dest string, input <-chan string, servers []string, pathLen int, clientTick time.Duration) {
+func sendLoop(ctx context.Context, mc *mixnode.MixNode, dest string, input <-chan string, servers []string, pathLen int, clientTick time.Duration) {
 	ticker := time.NewTicker(clientTick)
 	defer ticker.Stop()
 
-	for range ticker.C {
+	for {
 		select {
-		case msg := <-input:
-			packet, firstNode, err := crypto.OnionEncrypt(msg, dest, false, servers, pathLen, PublicKeysPath)
-			if err != nil {
-				log.Printf("Error encrypting message: %v", err)
-				continue
+		case <-ticker.C:
+			select {
+			case msg := <-input:
+				packet, firstNode, err := crypto.OnionEncrypt(msg, dest, false, servers, pathLen, PublicKeysPath)
+				if err != nil {
+					log.Printf("Error encrypting message: %v", err)
+					continue
+				}
+				sendToPeer(mc.Stubs[firstNode], packet)
+			default:
+				packet, firstNode, err := crypto.OnionEncrypt("__DUMMY__", dest, true, servers, pathLen, PublicKeysPath)
+				if err != nil {
+					log.Printf("Error encrypting message: %v", err)
+					continue
+				}
+				sendToPeer(mc.Stubs[firstNode], packet)
 			}
-			sendToPeer(mc.Stubs[firstNode], packet)
-		default:
-			packet, firstNode, err := crypto.OnionEncrypt("__DUMMY__", dest, true, servers, pathLen, PublicKeysPath)
-			if err != nil {
-				log.Printf("Error encrypting message: %v", err)
-				continue
-			}
-			sendToPeer(mc.Stubs[firstNode], packet)
+		case <-ctx.Done():
+			return
 		}
-
 	}
 }

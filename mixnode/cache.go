@@ -1,6 +1,7 @@
 package mixnode
 
 import (
+	"context"
 	"crypto/sha256"
 	"sync"
 	"time"
@@ -17,11 +18,11 @@ type ReplayCache struct {
 }
 
 // NewReplayCache creates a replay cache and starts a background goroutine that cleans up old entries every 10 seconds.
-func NewReplayCache() *ReplayCache {
+func NewReplayCache(ctx context.Context) *ReplayCache {
 	rc := &ReplayCache{
 		seen: make(map[[32]byte]time.Time),
 	}
-	go rc.evictLoop()
+	go rc.evictLoop(ctx)
 	return rc
 }
 
@@ -46,17 +47,24 @@ func (rc *ReplayCache) IsReplay(packet []byte) bool {
 }
 
 // evictLoop runs in the background and deletes entries older than 30 seconds. This runs every 10 seconds so the map doesn't grow forever.
-func (rc *ReplayCache) evictLoop() {
-	for {
-		time.Sleep(replayCacheEvictInterval)
-		cutoff := time.Now().Add(-replayCacheTTL)
+func (rc *ReplayCache) evictLoop(ctx context.Context) {
+	ticker := time.NewTicker(replayCacheEvictInterval)
+	defer ticker.Stop()
 
-		rc.mu.Lock()
-		for hash, seenAt := range rc.seen {
-			if seenAt.Before(cutoff) {
-				delete(rc.seen, hash)
+	for {
+		select {
+		case <-ticker.C:
+			cutoff := time.Now().Add(-replayCacheTTL)
+
+			rc.mu.Lock()
+			for hash, seenAt := range rc.seen {
+				if seenAt.Before(cutoff) {
+					delete(rc.seen, hash)
+				}
 			}
+			rc.mu.Unlock()
+		case <-ctx.Done():
+			return
 		}
-		rc.mu.Unlock()
 	}
 }

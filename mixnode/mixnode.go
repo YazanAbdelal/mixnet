@@ -19,12 +19,12 @@ type MixNode struct {
 	ReplayCache *ReplayCache
 }
 
-func NewMixNode(port string, stubs map[string]pb.MessagingClient) *MixNode {
+func NewMixNode(ctx context.Context, port string, stubs map[string]pb.MessagingClient) *MixNode {
 	return &MixNode{
 		Port:        port,
 		Pipe:        make(chan []byte, 100),
 		Stubs:       stubs,
-		ReplayCache: NewReplayCache(),
+		ReplayCache: NewReplayCache(ctx),
 	}
 }
 

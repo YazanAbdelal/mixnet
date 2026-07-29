@@ -48,7 +48,7 @@ func encryptOnionLayer(content []byte, nextNode string, pathToKey string, isDumm
 	rsaPlaintext = append(rsaPlaintext, []byte(nextNode)...)
 
 	// now we load the public RSA key of the target node
-	rsaKey, err := keygen.LoadPublicKey(pathToKey)
+	rsaKey, err := keygen.LoadPublicRSAKey(pathToKey)
 	if err != nil {
 		return nil, errors.New("encryptOnionLayer: error loading public key: " + err.Error())
 	}
@@ -129,7 +129,7 @@ func OnionEncrypt(msg string, dest string, isDummy bool, servers []string, pathL
 // if nextNode != "", the message is padded to size = MessageSize.
 func DecryptLayer(encryptedMsg []byte, privateKeyPath string) ([]byte, string, bool, error) {
 	// first we load private RSA key
-	rsaKey, err := keygen.LoadPrivateKey(privateKeyPath)
+	rsaKey, err := keygen.LoadPrivateRSAKey(privateKeyPath)
 	if err != nil {
 		return nil, "", false, errors.New("DecryptLayer: error loading private key: " + err.Error())
 	}
