@@ -9,7 +9,7 @@ services:
       dockerfile: mixnode/Dockerfile
     command: ["--type", "server", "--name", "server-1"]
     volumes:
-      - ./keys/server-1-private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/server-1-ecc-private.pem:/etc/mixnet/keys/ecc_private.pem:ro
       - ./keys/public:/etc/mixnet/keys/public:ro
       - ./certs/server-1.crt:/etc/mixnet/certs/tls.crt:ro
       - ./certs/server-1.key:/etc/mixnet/certs/tls.key:ro
@@ -25,7 +25,7 @@ services:
       dockerfile: mixnode/Dockerfile
     command: ["--type", "server", "--name", "server-2"]
     volumes:
-      - ./keys/server-2-private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/server-2-ecc-private.pem:/etc/mixnet/keys/ecc_private.pem:ro
       - ./keys/public:/etc/mixnet/keys/public:ro
       - ./certs/server-2.crt:/etc/mixnet/certs/tls.crt:ro
       - ./certs/server-2.key:/etc/mixnet/certs/tls.key:ro
@@ -41,7 +41,7 @@ services:
       dockerfile: mixnode/Dockerfile
     command: ["--type", "server", "--name", "server-3"]
     volumes:
-      - ./keys/server-3-private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/server-3-ecc-private.pem:/etc/mixnet/keys/ecc_private.pem:ro
       - ./keys/public:/etc/mixnet/keys/public:ro
       - ./certs/server-3.crt:/etc/mixnet/certs/tls.crt:ro
       - ./certs/server-3.key:/etc/mixnet/certs/tls.key:ro
@@ -57,7 +57,7 @@ services:
       dockerfile: mixnode/Dockerfile
     command: ["--type", "server", "--name", "server-4"]
     volumes:
-      - ./keys/server-4-private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/server-4-ecc-private.pem:/etc/mixnet/keys/ecc_private.pem:ro
       - ./keys/public:/etc/mixnet/keys/public:ro
       - ./certs/server-4.crt:/etc/mixnet/certs/tls.crt:ro
       - ./certs/server-4.key:/etc/mixnet/certs/tls.key:ro
@@ -73,90 +73,10 @@ services:
       dockerfile: mixnode/Dockerfile
     command: ["--type", "server", "--name", "server-5"]
     volumes:
-      - ./keys/server-5-private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/server-5-ecc-private.pem:/etc/mixnet/keys/ecc_private.pem:ro
       - ./keys/public:/etc/mixnet/keys/public:ro
       - ./certs/server-5.crt:/etc/mixnet/certs/tls.crt:ro
       - ./certs/server-5.key:/etc/mixnet/certs/tls.key:ro
-      - ./certs/ca.crt:/etc/mixnet/certs/ca.crt:ro
-      - ./config.json:/etc/mixnet/config.json:ro
-    networks:
-      - mixnet
-
-  server-6:
-    container_name: server-6
-    build:
-      context: .
-      dockerfile: mixnode/Dockerfile
-    command: ["--type", "server", "--name", "server-6"]
-    volumes:
-      - ./keys/server-6-private.pem:/etc/mixnet/keys/private.pem:ro
-      - ./keys/public:/etc/mixnet/keys/public:ro
-      - ./certs/server-6.crt:/etc/mixnet/certs/tls.crt:ro
-      - ./certs/server-6.key:/etc/mixnet/certs/tls.key:ro
-      - ./certs/ca.crt:/etc/mixnet/certs/ca.crt:ro
-      - ./config.json:/etc/mixnet/config.json:ro
-    networks:
-      - mixnet
-
-  server-7:
-    container_name: server-7
-    build:
-      context: .
-      dockerfile: mixnode/Dockerfile
-    command: ["--type", "server", "--name", "server-7"]
-    volumes:
-      - ./keys/server-7-private.pem:/etc/mixnet/keys/private.pem:ro
-      - ./keys/public:/etc/mixnet/keys/public:ro
-      - ./certs/server-7.crt:/etc/mixnet/certs/tls.crt:ro
-      - ./certs/server-7.key:/etc/mixnet/certs/tls.key:ro
-      - ./certs/ca.crt:/etc/mixnet/certs/ca.crt:ro
-      - ./config.json:/etc/mixnet/config.json:ro
-    networks:
-      - mixnet
-
-  server-8:
-    container_name: server-8
-    build:
-      context: .
-      dockerfile: mixnode/Dockerfile
-    command: ["--type", "server", "--name", "server-8"]
-    volumes:
-      - ./keys/server-8-private.pem:/etc/mixnet/keys/private.pem:ro
-      - ./keys/public:/etc/mixnet/keys/public:ro
-      - ./certs/server-8.crt:/etc/mixnet/certs/tls.crt:ro
-      - ./certs/server-8.key:/etc/mixnet/certs/tls.key:ro
-      - ./certs/ca.crt:/etc/mixnet/certs/ca.crt:ro
-      - ./config.json:/etc/mixnet/config.json:ro
-    networks:
-      - mixnet
-
-  server-9:
-    container_name: server-9
-    build:
-      context: .
-      dockerfile: mixnode/Dockerfile
-    command: ["--type", "server", "--name", "server-9"]
-    volumes:
-      - ./keys/server-9-private.pem:/etc/mixnet/keys/private.pem:ro
-      - ./keys/public:/etc/mixnet/keys/public:ro
-      - ./certs/server-9.crt:/etc/mixnet/certs/tls.crt:ro
-      - ./certs/server-9.key:/etc/mixnet/certs/tls.key:ro
-      - ./certs/ca.crt:/etc/mixnet/certs/ca.crt:ro
-      - ./config.json:/etc/mixnet/config.json:ro
-    networks:
-      - mixnet
-
-  server-10:
-    container_name: server-10
-    build:
-      context: .
-      dockerfile: mixnode/Dockerfile
-    command: ["--type", "server", "--name", "server-10"]
-    volumes:
-      - ./keys/server-10-private.pem:/etc/mixnet/keys/private.pem:ro
-      - ./keys/public:/etc/mixnet/keys/public:ro
-      - ./certs/server-10.crt:/etc/mixnet/certs/tls.crt:ro
-      - ./certs/server-10.key:/etc/mixnet/certs/tls.key:ro
       - ./certs/ca.crt:/etc/mixnet/certs/ca.crt:ro
       - ./config.json:/etc/mixnet/config.json:ro
     networks:
@@ -167,11 +87,11 @@ services:
     build:
       context: .
       dockerfile: mixnode/Dockerfile
-    command: ["--type", "client", "--name", "client-1", "--dest", "client-2"]
+    command: ["--type", "client", "--name", "client-1"]
     stdin_open: true
     tty: true
     volumes:
-      - ./keys/client-1-private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/client-1-ecc-private.pem:/etc/mixnet/keys/ecc_private.pem:ro
       - ./keys/public:/etc/mixnet/keys/public:ro
       - ./certs/client-1.crt:/etc/mixnet/certs/tls.crt:ro
       - ./certs/client-1.key:/etc/mixnet/certs/tls.key:ro
@@ -183,11 +103,6 @@ services:
       - server-3
       - server-4
       - server-5
-      - server-6
-      - server-7
-      - server-8
-      - server-9
-      - server-10
     networks:
       - mixnet
 
@@ -196,11 +111,11 @@ services:
     build:
       context: .
       dockerfile: mixnode/Dockerfile
-    command: ["--type", "client", "--name", "client-2", "--dest", "client-1"]
+    command: ["--type", "client", "--name", "client-2"]
     stdin_open: true
     tty: true
     volumes:
-      - ./keys/client-2-private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/client-2-ecc-private.pem:/etc/mixnet/keys/ecc_private.pem:ro
       - ./keys/public:/etc/mixnet/keys/public:ro
       - ./certs/client-2.crt:/etc/mixnet/certs/tls.crt:ro
       - ./certs/client-2.key:/etc/mixnet/certs/tls.key:ro
@@ -212,11 +127,6 @@ services:
       - server-3
       - server-4
       - server-5
-      - server-6
-      - server-7
-      - server-8
-      - server-9
-      - server-10
     networks:
       - mixnet
 
@@ -225,11 +135,11 @@ services:
     build:
       context: .
       dockerfile: mixnode/Dockerfile
-    command: ["--type", "client", "--name", "client-3", "--dest", "client-4"]
+    command: ["--type", "client", "--name", "client-3"]
     stdin_open: true
     tty: true
     volumes:
-      - ./keys/client-3-private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/client-3-ecc-private.pem:/etc/mixnet/keys/ecc_private.pem:ro
       - ./keys/public:/etc/mixnet/keys/public:ro
       - ./certs/client-3.crt:/etc/mixnet/certs/tls.crt:ro
       - ./certs/client-3.key:/etc/mixnet/certs/tls.key:ro
@@ -241,11 +151,6 @@ services:
       - server-3
       - server-4
       - server-5
-      - server-6
-      - server-7
-      - server-8
-      - server-9
-      - server-10
     networks:
       - mixnet
 
@@ -254,11 +159,11 @@ services:
     build:
       context: .
       dockerfile: mixnode/Dockerfile
-    command: ["--type", "client", "--name", "client-4", "--dest", "client-3"]
+    command: ["--type", "client", "--name", "client-4"]
     stdin_open: true
     tty: true
     volumes:
-      - ./keys/client-4-private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/client-4-ecc-private.pem:/etc/mixnet/keys/ecc_private.pem:ro
       - ./keys/public:/etc/mixnet/keys/public:ro
       - ./certs/client-4.crt:/etc/mixnet/certs/tls.crt:ro
       - ./certs/client-4.key:/etc/mixnet/certs/tls.key:ro
@@ -270,11 +175,30 @@ services:
       - server-3
       - server-4
       - server-5
-      - server-6
-      - server-7
-      - server-8
-      - server-9
-      - server-10
+    networks:
+      - mixnet
+
+  client-5:
+    container_name: client-5
+    build:
+      context: .
+      dockerfile: mixnode/Dockerfile
+    command: ["--type", "client", "--name", "client-5"]
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./keys/client-5-ecc-private.pem:/etc/mixnet/keys/ecc_private.pem:ro
+      - ./keys/public:/etc/mixnet/keys/public:ro
+      - ./certs/client-5.crt:/etc/mixnet/certs/tls.crt:ro
+      - ./certs/client-5.key:/etc/mixnet/certs/tls.key:ro
+      - ./certs/ca.crt:/etc/mixnet/certs/ca.crt:ro
+      - ./config.json:/etc/mixnet/config.json:ro
+    depends_on:
+      - server-1
+      - server-2
+      - server-3
+      - server-4
+      - server-5
     networks:
       - mixnet
 

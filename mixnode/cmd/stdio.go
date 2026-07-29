@@ -3,8 +3,13 @@ package main
 import (
 	"bufio"
 	"context"
+	"crypto/rand"
+	"fmt"
 	"log"
+	"math/big"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/YazanAbdelal/mixnet/crypto"
@@ -15,32 +20,46 @@ const (
 	PublicKeysPath = "/etc/mixnet/keys/public/"
 )
 
-// readStdin reads from the standard input and sends the messages it receives to the sendLoop function through a receive only channel.
-func readStdin() <-chan string {
+type sendEntry struct {
+	message string
+	dest    string
+}
 
-	ch := make(chan string, 2)
+// interactiveInput prompts the user for a message and a recipient from the
+// available clients, then sends the entry to the returned channel.
+func interactiveInput(clients []string) <-chan sendEntry {
+	ch := make(chan sendEntry, 2)
 	go func() {
-		scanner := bufio.NewScanner(os.Stdin)
-
-		// read from the stdin and send to channel. the channel will forward to the sendLoop function, which in turn remotely calls (RPC) the target's
-		// function. The loop exists when an error occurs or when stdin is closed (EOF), or if the buffer exceeds its capacity.
-		for scanner.Scan() {
-			if input := scanner.Text(); input != "" {
-				ch <- input
+		reader := bufio.NewReader(os.Stdin)
+		for {
+			fmt.Print("Enter message: ")
+			msg, _ := reader.ReadString('\n')
+			msg = strings.TrimSpace(msg)
+			if msg == "" {
+				continue
 			}
+			fmt.Println("\nAvailable recipients:")
+			for i, c := range clients {
+				fmt.Printf("  %d: %s\n", i+1, c)
+			}
+			fmt.Printf("Choose recipient (1-%d): ", len(clients))
+			choiceStr, _ := reader.ReadString('\n')
+			choiceStr = strings.TrimSpace(choiceStr)
+			choice, err := strconv.Atoi(choiceStr)
+			if err != nil || choice < 1 || choice > len(clients) {
+				fmt.Println("Invalid choice")
+				continue
+			}
+			ch <- sendEntry{message: msg, dest: clients[choice-1]}
 		}
-		// if scanner exited because of an error, print error log
-		if err := scanner.Err(); err != nil {
-			log.Printf("Error reading stdin: %v\n", err)
-		}
-
-		close(ch) // closing the channel causes the sendLoop function to return.
 	}()
 	return ch
 }
 
-// sendLoop reads messages (string) from the stdin, encrypts the message with onion and then forwards them to the next node in the mixnet using a gRPC stub.
-func sendLoop(ctx context.Context, mc *mixnode.MixNode, dest string, input <-chan string, servers []string, pathLen int, clientTick time.Duration, cryptoType string) {
+// sendLoop reads message entries from the input channel, encrypts them as onion
+// layers and forwards them through the mixnet. When no real input is ready it
+// sends dummy cover traffic to a random client.
+func sendLoop(ctx context.Context, mc *mixnode.MixNode, input <-chan sendEntry, servers []string, clients []string, pathLen int, clientTick time.Duration, cryptoType string) {
 	ticker := time.NewTicker(clientTick)
 	defer ticker.Stop()
 
@@ -48,15 +67,17 @@ func sendLoop(ctx context.Context, mc *mixnode.MixNode, dest string, input <-cha
 		select {
 		case <-ticker.C:
 			select {
-			case msg := <-input:
-				packet, firstNode, err := crypto.OnionEncrypt(msg, dest, false, servers, pathLen, PublicKeysPath, cryptoType)
+			case entry := <-input:
+				packet, firstNode, err := crypto.OnionEncrypt(entry.message, entry.dest, false, servers, pathLen, PublicKeysPath, cryptoType)
 				if err != nil {
 					log.Printf("Error encrypting message: %v", err)
 					continue
 				}
 				sendToPeer(mc.Stubs[firstNode], packet)
 			default:
-				packet, firstNode, err := crypto.OnionEncrypt("__DUMMY__", dest, true, servers, pathLen, PublicKeysPath, cryptoType)
+				idx, _ := rand.Int(rand.Reader, big.NewInt(int64(len(clients))))
+				dummyDest := clients[idx.Int64()]
+				packet, firstNode, err := crypto.OnionEncrypt("__DUMMY__", dummyDest, true, servers, pathLen, PublicKeysPath, cryptoType)
 				if err != nil {
 					log.Printf("Error encrypting message: %v", err)
 					continue

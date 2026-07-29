@@ -1,7 +1,5 @@
 github.com/YazanAbdelal/mixnet/keygen v0.0.0-20260725201217-f7480210ac7b h1:ANEyTYJ0OYNmrhWJTnN7iVQQjTGFguDwkcLT0HYOico=
 github.com/YazanAbdelal/mixnet/keygen v0.0.0-20260725201217-f7480210ac7b/go.mod h1:Gg9vkH1ILvmgH69Gq3IQSFxCc5e+4X2xeN/Dt93M018=
-github.com/cloudflare/circl v1.6.4 h1:pOXuDTCEYyzydgUpQ0CQz3LsinKjiSk6nNP5Lt5K64U=
-github.com/cloudflare/circl v1.6.4/go.mod h1:YxarevkLlbaHuWsxG6vmYNWBEsSp4pnp7j+4VljMavY=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
 golang.org/x/crypto v0.45.0 h1:jMBrvKuj23MTlT0bQEOBcAE0mjg8mK9RXFhRH6nyF3Q=

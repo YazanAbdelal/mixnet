@@ -1,39 +1,46 @@
 ## mixnet
 
-A source-routed mix network (mixnet) written in Go, deployed via Docker Compose. Messages are wrapped in multiple layers of hybrid encryption (RSA-4096 + AES-256-GCM), routed through a random subset of mix servers, padded to a uniform size, and shuffled in batches, making sender-recipient linkability infeasible for a local adversary.
+A source-routed mix network (mixnet) written in Go, deployed via Docker Compose. Messages are wrapped in multiple layers of hybrid encryption, routed through a random subset of mix servers, padded to a uniform size, and shuffled in batches, making sender-recipient linkability infeasible for a local adversary. Supports both RSA-4096 and ECC (X25519 + AES-256-GCM) for onion encryption.
 
 ---
 
 ### Setup
 
-The script `./scripts/script.sh` generates everything needed to run the network:
+Run `./scripts/script.sh` to generate everything needed to run the network:
 
-1. **RSA key pairs** (4096-bit): one pair per node, used for onion encryption. Private keys stay with each node; public keys are shared into a `keys/public/` directory.
-2. **mTLS certificates**: a private Certificate Authority (CA) is created, then each node gets a certificate signed by the CA. These are used for authenticated, encrypted gRPC channels between nodes.
-3. **config.json**: lists all servers and clients, plus tunable parameters (path length, batch size, timing).
-4. **docker-compose.yml**: one service per node with the correct volumes, flags, and network configuration.
+1. **Key pairs** — one pair per node for onion encryption. You can generate RSA keys, ECC keys, or both (the script asks). Private keys stay with each node; public keys are shared into `keys/public/`.
+2. **mTLS certificates** — a private Certificate Authority (CA) is created, then each node gets a certificate signed by the CA. These are used for authenticated, encrypted gRPC channels between nodes.
+3. **config.json** — lists all servers and clients, plus tunable parameters (crypto type, path length, batch size, timing).
+4. **docker-compose.yml** — one service per node with the correct volumes and network configuration.
 
-After the script finishes, you must edit `docker-compose.yml` to set each client's `--dest` flag to its target (e.g., `--dest client-2`). Then build and start:
+Build and start:
 
 ```bash
 docker compose up -d --build
 ```
 
-To send messages, attach to a client container and type:
+To send messages, attach to a client container:
 
 ```bash
 docker attach client-1
+```
+
+You'll be prompted for a message and then asked to pick a recipient from the available clients:
+
+```
+Enter message: hello everyone
+
+Available recipients:
+  1: client-2
+  2: client-3
+Choose recipient (1-2): 1
 ```
 
 ---
 
 ### Onion Encryption
 
-Each layer of the onion is encrypted using hybrid encryption:
-
-```
-  [ 512-byte RSA ciphertext ][ AES-GCM ciphertext ]
-```
+Each layer of the onion is encrypted using hybrid encryption. For RSA the outer layer is a 512-byte RSA-OAEP ciphertext; for ECC it's a 64-byte ECDH-based envelope. Both wrap an AES-256-GCM payload.
 
 **Encryption** (inside-out):
 
@@ -45,21 +52,21 @@ Each layer of the onion is encrypted using hybrid encryption:
    - `l` as a 2-byte big-endian integer
    - A 1-byte dummy flag (1 = dummy, 0 = real)
    - The next node's name (as a string, variable length)
-5. Encrypt this buffer with the next node's **public RSA key** using RSA-OAEP (SHA-256). Since the RSA key is 4096 bits, the output is always 512 bytes.
-6. Prepend the RSA ciphertext to the AES ciphertext: `[512 bytes][AES output]`.
+5. Encrypt this buffer with the next node's public key — RSA-OAEP for RSA keys, ECDH key agreement for ECC keys.
+6. Prepend the resulting ciphertext to the AES ciphertext.
 
 **Decryption** (outside-in):
 
-1. Read the first 512 bytes of the packet.
-2. Decrypt them using the current node's **private RSA key** to recover: AES key, `l`, dummy flag, next node.
+1. Read the outer ciphertext (512 bytes for RSA, 64 bytes for ECC).
+2. Decrypt it using the current node's private key to recover: AES key, `l`, dummy flag, next node.
 3. Read the next `l` bytes as the AES ciphertext.
 4. Decrypt the AES ciphertext using the ephemeral AES key to recover the content.
-5. If the next node is empty (""), this is the final destination, print the content (or drop it if the dummy flag is set).
+5. If the next node is empty (""), this is the final destination — print the content (or drop it if the dummy flag is set).
 6. Otherwise, pad the content with random bytes to exactly 4096 bytes and forward to the next node.
 
 **Padding**: After all onion layers are applied, the outermost layer is padded to exactly 4096 bytes with random data. This is done before every hop as well. This ensures all packets are identical in size regardless of their plaintext length.
 
-**Dummy messages**: When a client has no real message to send, it sends a dummy packet (`"__DUMMY__"` with the dummy flag set to 1). These are forwarded through the entire path like real packets, but silently dropped at the final destination. This prevents an adversary from distinguishing active senders from idle ones.
+**Dummy messages**: When a client has no real message to send, it sends a dummy packet (`"__DUMMY__"` with the dummy flag set to 1) to a random recipient. These are forwarded through the entire path like real packets, but silently dropped at the final destination. This prevents an adversary from distinguishing active senders from idle ones.
 
 ---
 
@@ -83,9 +90,9 @@ The message is sent to `randomPath[0]` (server-3).
 
 ### Sending Messages
 
-1. The user types a message into stdin.
-2. `readStdin()` reads the input and sends it through a channel to `sendLoop()`.
-3. `sendLoop()` fires every `client_tick_us` microseconds. If a real message is waiting, it encrypts it with `OnionEncrypt()`; otherwise it encrypts a dummy.
+1. The user types a message into stdin and selects a recipient from an interactive menu.
+2. `interactiveInput()` sends the message and destination through a channel to `sendLoop()`.
+3. `sendLoop()` fires every `client_tick_us` microseconds. If a real message is waiting, it encrypts it with `OnionEncrypt()`; otherwise it encrypts a dummy destined for a random client.
 4. The encrypted packet (always 4096 bytes) is sent to the first mix node via gRPC (`ForwardMessage`).
 
 ---
@@ -94,7 +101,7 @@ The message is sent to `randomPath[0]` (server-3).
 
 1. Each node runs a gRPC server on port 50050 (mTLS-secured).
 2. When a packet arrives, `ForwardMessage()` checks the replay cache first (SHA-256 hash of the raw bytes, dropped silently if seen within 30s). Then it pushes the packet onto a `Pipe` channel.
-3. `receiveMessages()` reads from the Pipe, calls `DecryptLayer()` with the node's private RSA key, and gets the decrypted content, the next node, and the dummy flag.
+3. `receiveMessages()` reads from the Pipe, decrypts a layer with the node's private key (RSA or ECC depending on the configured crypto type), and gets the decrypted content, the next node, and the dummy flag.
 4. If this is the final destination (nextNode == ""):
    - If dummy, drop silently.
    - Otherwise, print the decrypted message.
@@ -129,6 +136,7 @@ All values live in `config.json`, edit and restart without rebuilding:
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
+| `crypto_type` | `ecc` | Onion encryption: `rsa`, `ecc`, or `both` |
 | `path_len` | 3 | Number of mix hops per message |
 | `batch_size` | 10 | Messages collected before forced flush |
 | `client_tick_us` | 200000 | Microseconds between client sends (200000 = 2 msg/s) |
@@ -141,11 +149,11 @@ All values live in `config.json`, edit and restart without rebuilding:
 ```
 mixnet/
 ├── mixnode/           # Node logic (gRPC handlers, batching, config, replay cache)
-├── crypto/            # Onion encryption, AES-GCM, RSA-OAEP, mTLS
-├── keygen/            # RSA key pair generation
+├── crypto/            # Onion encryption, AES-GCM, RSA-OAEP, ECDH, mTLS
+├── keygen/            # RSA and ECC key pair generation
 ├── proto/             # protobuf definitions + generated gRPC code
 ├── scripts/           # Setup script (keys, certs, compose, config)
-├── keys/              # RSA keys (generated by script)
+├── keys/              # Key pairs (generated by script)
 ├── certs/             # TLS certificates (generated by script)
 ├── config.json        # Network parameters (generated by script)
 └── docker-compose.yml # Container definitions (generated by script)

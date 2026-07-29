@@ -30,10 +30,8 @@ func initStubs(nodeName string, nodes []string) map[string]pb.MessagingClient {
 
 func main() {
 	nodeName := flag.String("name", "", "node's name")
-	destName := flag.String("dest", "", "recipient's name")
 	nodeType := flag.String("type", "client", "node type (client or server)")
 	cfgPath := flag.String("config", "/etc/mixnet/config.json", "path to config file")
-	cryptoType := flag.String("crypto", "rsa", "crypto type (rsa or ecc)")
 	flag.Parse()
 
 	cfg, err := mixnode.LoadConfig(*cfgPath)
@@ -42,7 +40,7 @@ func main() {
 	}
 
 	var privKeyPath string
-	if *cryptoType == "ecc" {
+	if cfg.CryptoType == "ecc" {
 		privKeyPath = "/etc/mixnet/keys/ecc_private.pem"
 	} else {
 		privKeyPath = "/etc/mixnet/keys/private.pem"
@@ -68,7 +66,7 @@ func main() {
 
 	go func() {
 		defer wg.Done()
-		receiveMessages(ctx, mc, *nodeType, batchCh, *cryptoType, privKeyPath)
+		receiveMessages(ctx, mc, *nodeType, batchCh, cfg.CryptoType, privKeyPath)
 	}()
 
 	if *nodeType == "client" {
@@ -76,7 +74,7 @@ func main() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			sendLoop(ctx, mc, *destName, readStdin(), cfg.Servers, cfg.PathLen, clientTick, *cryptoType)
+			sendLoop(ctx, mc, interactiveInput(cfg.Clients), cfg.Servers, cfg.Clients, cfg.PathLen, clientTick, cfg.CryptoType)
 		}()
 	} else {
 		flushTimeout := time.Duration(cfg.FlushTimeoutMs) * time.Millisecond
@@ -91,7 +89,7 @@ func main() {
 	<-sigCh
 	log.Println("Shutting down...")
 
-	// wait until all messages are received and then shuts down
+	// wait until all messages are received before shutting down.
 	server.GracefulStop()
 	cancel()
 	wg.Wait()

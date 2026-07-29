@@ -1,6 +1,6 @@
 #!/bin/bash
 # mixnet setup script
-# Generates RSA keys, mTLS certificates, node config, and docker-compose.yml
+# Generates crypto keys, mTLS certificates, node config, and docker-compose.yml
 # based on the user-specified number of mix servers and clients.
 set -euo pipefail
 
@@ -18,7 +18,7 @@ generate_ca_cert() {
 
 	# create a self-signed CA certificate (public, distributed to all nodes)
 	openssl req -x509 -new -nodes -key certs/ca.key -sha256 -days 365 \
-		-out certs/ca.crt -subj "/CN=mixnet-CA"
+		-out certs/ca.crt -subj "//CN=mixnet-CA"
 }
 
 # -------------------------------------------------------
@@ -38,7 +38,7 @@ generate_tls_cert() {
 	# is set to the node's Docker service name so that TLS hostname
 	# verification succeeds inside the Docker network.
 	openssl req -new -key "certs/$name.key" -out "certs/$name.csr" \
-		-subj "/CN=$name" \
+		-subj "//CN=$name" \
 		-addext "subjectAltName=DNS:$name"
 
 	# the CA signs the CSR, producing the node's certificate
@@ -92,7 +92,8 @@ generate_config() {
   "path_len": $path_len,
   "batch_size": $batch_size,
   "client_tick_us": $client_tick_us,
-  "flush_timeout_ms": $flush_timeout_ms
+  "flush_timeout_ms": $flush_timeout_ms,
+  "crypto_type": "$crypto_type"
 }
 EOF
 }
@@ -138,7 +139,7 @@ COMPOSE_EOF
     build:
       context: .
       dockerfile: mixnode/Dockerfile
-    command: ["--type", "server", "--name", "server-$i", "--crypto", "$crypto_type"]
+    command: ["--type", "server", "--name", "server-$i"]
     volumes:
       - ./keys/server-${i}${private_key_suffix}:${container_private_key_path}:ro
       - ./keys/public:/etc/mixnet/keys/public:ro
@@ -159,7 +160,7 @@ COMPOSE_EOF
     build:
       context: .
       dockerfile: mixnode/Dockerfile
-    command: ["--type", "client", "--name", "client-$i", "--dest", "", "--crypto", "$crypto_type"]
+    command: ["--type", "client", "--name", "client-$i"]
     stdin_open: true
     tty: true
     volumes:
@@ -197,14 +198,13 @@ read -p "Client tick (microseconds between sends, default 200): " client_tick_us
 client_tick_us=${client_tick_us:-200000}
 read -p "Flush timeout (ms before a partial batch is sent, default 500): " flush_timeout_ms
 flush_timeout_ms=${flush_timeout_ms:-1}
-read -p "Crypto type, rsa or ecc (default: rsa): " crypto_type
-crypto_type=${crypto_type:-rsa}
+read -p "Crypto type, rsa or ecc (default: ecc): " crypto_type
+crypto_type=${crypto_type:-ecc}
 
 # step 1: generate key pairs (private + public) for each node
 #         (used for onion encryption, not TLS)
-#         the keygen tool generates RSA keys by default, but if
-#         you picked ecc above it will generate ECC keys instead,
-#         and if you picked both it generates both at once
+#         the keygen tool generates both RSA and ECC keys by default,
+#         but you can pick rsa or ecc to generate only that type
 go run ./keygen/cmd -servers "$num_nodes" -clients "$num_clients" -crypto-type "$crypto_type"
 
 # step 2: generate mTLS certificates (CA + one per node)
@@ -214,9 +214,7 @@ generate_tls_certs
 # step 3: write config.json listing all servers and clients
 generate_config
 
-# step 4: write docker-compose.yml with all services, volumes and networks,
-#         the --crypto flag we bake in here tells each container whether to
-#         use rsa or ecc for its onion layers
+# step 4: write docker-compose.yml with all services, volumes and networks
 generate_compose_file
 
 echo "Done. You can now run: docker compose up"

@@ -13,6 +13,7 @@ type Config struct {
 	BatchSize      int      `json:"batch_size"`
 	ClientTickUs   int      `json:"client_tick_us"`
 	FlushTimeoutMs int      `json:"flush_timeout_ms"`
+	CryptoType     string   `json:"crypto_type"`
 }
 
 const (
@@ -47,6 +48,9 @@ func LoadConfig(path string) (*Config, error) {
 	}
 	if cfg.FlushTimeoutMs <= 0 {
 		cfg.FlushTimeoutMs = defaultFlushTimeoutMs
+	}
+	if cfg.CryptoType == "" {
+		cfg.CryptoType = "ecc"
 	}
 	return &cfg, nil
 }
