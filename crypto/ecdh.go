@@ -31,7 +31,7 @@ func DeriveAESKey(privateKey *ecdh.PrivateKey, publicKey *ecdh.PublicKey) ([]byt
 	}
 
 	// derive uniformly random AES key from shared secret
-	key := make([]byte, 32)
+	key := make([]byte, AESKeySize)
 	h := hkdf.New(sha256.New, sharedSecret, nil, []byte("mixnet-layer"))
 	io.ReadFull(h, key)
 

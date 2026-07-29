@@ -41,7 +41,7 @@ func runServer(mc *mixnode.MixNode, creds credentials.TransportCredentials) *grp
 func receiveMessages(ctx context.Context, mc *mixnode.MixNode, nodeType string, batchCh chan<- mixnode.BatchEntry) {
 	processMsg := func(msg []byte) {
 		// decrypt onion layer
-		decryptedMsg, nextNode, isDummy, err := crypto.DecryptLayer(msg, "/etc/mixnet/keys/private.pem")
+		decryptedMsg, nextNode, isDummy, err := crypto.DecryptOnionLayerWithRSA(msg, "/etc/mixnet/keys/private.pem")
 		if err != nil {
 			log.Fatal("receiveMessages: Error decrypting onion layer: " + err.Error())
 			return
