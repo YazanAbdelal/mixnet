@@ -115,14 +115,13 @@ EOF
 #     the mix network is ready
 generate_compose_file() {
 	# pick the right private key filename and mount path based on
-	# what crypto we're using. RSA keys go to private.pem, ECC keys
-	# go to ecc_private.pem so the app knows which one to load.
+	# what crypto we're using.
 	if [ "$crypto_type" = "ecc" ]; then
 		private_key_suffix="-ecc-private.pem"
 		container_private_key_path="/etc/mixnet/keys/ecc_private.pem"
 	else
 		private_key_suffix="-rsa-private.pem"
-		container_private_key_path="/etc/mixnet/keys/private.pem"
+		container_private_key_path="/etc/mixnet/keys/rsa_private.pem"
 	fi
 
 	cat > docker-compose.yml <<COMPOSE_EOF
@@ -194,10 +193,10 @@ read -p "Path length (number of mix hops, default 3): " path_len
 path_len=${path_len:-3}
 read -p "Batch size (messages per mix round, default 10): " batch_size
 batch_size=${batch_size:-10}
-read -p "Client tick (microseconds between sends, default 200): " client_tick_us
+read -p "Client tick (microseconds between sends, default 200000 (200ms)): " client_tick_us
 client_tick_us=${client_tick_us:-200000}
 read -p "Flush timeout (ms before a partial batch is sent, default 500): " flush_timeout_ms
-flush_timeout_ms=${flush_timeout_ms:-1}
+flush_timeout_ms=${flush_timeout_ms:-500}
 read -p "Crypto type, rsa or ecc (default: ecc): " crypto_type
 crypto_type=${crypto_type:-ecc}
 

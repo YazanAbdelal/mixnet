@@ -8,10 +8,10 @@ A source-routed mix network (mixnet) written in Go, deployed via Docker Compose.
 
 Run `./scripts/script.sh` to generate everything needed to run the network:
 
-1. **Key pairs** — one pair per node for onion encryption. You can generate RSA keys, ECC keys, or both (the script asks). Private keys stay with each node; public keys are shared into `keys/public/`.
-2. **mTLS certificates** — a private Certificate Authority (CA) is created, then each node gets a certificate signed by the CA. These are used for authenticated, encrypted gRPC channels between nodes.
-3. **config.json** — lists all servers and clients, plus tunable parameters (crypto type, path length, batch size, timing).
-4. **docker-compose.yml** — one service per node with the correct volumes and network configuration.
+1. **Key pairs**: one pair per node for onion encryption. You can generate RSA keys, ECC keys, or both (the script asks). Private keys stay with each node; public keys are shared into `keys/public/`.
+2. **mTLS certificates**: a private Certificate Authority (CA) is created, then each node gets a certificate signed by the CA. These are used for authenticated, encrypted gRPC channels between nodes.
+3. **config.json**: lists all servers and clients, plus tunable parameters (crypto type, path length, batch size, timing).
+4. **docker-compose.yml**: one service per node with the correct volumes and network configuration.
 
 Build and start:
 
@@ -52,7 +52,7 @@ Each layer of the onion is encrypted using hybrid encryption. For RSA the outer 
    - `l` as a 2-byte big-endian integer
    - A 1-byte dummy flag (1 = dummy, 0 = real)
    - The next node's name (as a string, variable length)
-5. Encrypt this buffer with the next node's public key — RSA-OAEP for RSA keys, ECDH key agreement for ECC keys.
+5. Encrypt this buffer with the next node's public key: RSA-OAEP for RSA keys, ECDH key agreement for ECC keys.
 6. Prepend the resulting ciphertext to the AES ciphertext.
 
 **Decryption** (outside-in):
@@ -61,7 +61,7 @@ Each layer of the onion is encrypted using hybrid encryption. For RSA the outer 
 2. Decrypt it using the current node's private key to recover: AES key, `l`, dummy flag, next node.
 3. Read the next `l` bytes as the AES ciphertext.
 4. Decrypt the AES ciphertext using the ephemeral AES key to recover the content.
-5. If the next node is empty (""), this is the final destination — print the content (or drop it if the dummy flag is set).
+5. If the next node is empty (""), this is the final destination: print the content (or drop it if the dummy flag is set).
 6. Otherwise, pad the content with random bytes to exactly 4096 bytes and forward to the next node.
 
 **Padding**: After all onion layers are applied, the outermost layer is padded to exactly 4096 bytes with random data. This is done before every hop as well. This ensures all packets are identical in size regardless of their plaintext length.
@@ -134,13 +134,13 @@ Each node maintains an in-memory `ReplayCache`:
 
 All values live in `config.json`, edit and restart without rebuilding:
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `crypto_type` | `ecc` | Onion encryption: `rsa`, `ecc`, or `both` |
-| `path_len` | 3 | Number of mix hops per message |
-| `batch_size` | 10 | Messages collected before forced flush |
-| `client_tick_us` | 200000 | Microseconds between client sends (200000 = 2 msg/s) |
-| `flush_timeout_ms` | 1 | Max wait (ms) before a partial batch is flushed |
+| Parameter          | Default | Description                                          |
+| ------------------ | ------- | ---------------------------------------------------- |
+| `crypto_type`      | `ecc`   | Onion encryption: `rsa`, `ecc`, or `both`            |
+| `path_len`         | 3       | Number of mix hops per message                       |
+| `batch_size`       | 10      | Messages collected before forced flush               |
+| `client_tick_us`   | 200000  | Microseconds between client sends (200000 = 5 msg/s) |
+| `flush_timeout_ms` | 500     | Max wait (ms) before a partial batch is flushed      |
 
 ---
 

@@ -43,7 +43,7 @@ func main() {
 	if cfg.CryptoType == "ecc" {
 		privKeyPath = "/etc/mixnet/keys/ecc_private.pem"
 	} else {
-		privKeyPath = "/etc/mixnet/keys/private.pem"
+		privKeyPath = "/etc/mixnet/keys/rsa_private.pem"
 	}
 
 	nodes := append(cfg.Servers, cfg.Clients...)

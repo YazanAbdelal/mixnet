@@ -19,7 +19,7 @@ type Config struct {
 const (
 	defaultBatchSize      = 10
 	defaultClientTickUs   = 200000
-	defaultFlushTimeoutMs = 1
+	defaultFlushTimeoutMs = 500
 )
 
 func LoadConfig(path string) (*Config, error) {
