@@ -33,11 +33,19 @@ func main() {
 	destName := flag.String("dest", "", "recipient's name")
 	nodeType := flag.String("type", "client", "node type (client or server)")
 	cfgPath := flag.String("config", "/etc/mixnet/config.json", "path to config file")
+	cryptoType := flag.String("crypto", "rsa", "crypto type (rsa or ecc)")
 	flag.Parse()
 
 	cfg, err := mixnode.LoadConfig(*cfgPath)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	var privKeyPath string
+	if *cryptoType == "ecc" {
+		privKeyPath = "/etc/mixnet/keys/ecc_private.pem"
+	} else {
+		privKeyPath = "/etc/mixnet/keys/private.pem"
 	}
 
 	nodes := append(cfg.Servers, cfg.Clients...)
@@ -57,9 +65,10 @@ func main() {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
+
 	go func() {
 		defer wg.Done()
-		receiveMessages(ctx, mc, *nodeType, batchCh)
+		receiveMessages(ctx, mc, *nodeType, batchCh, *cryptoType, privKeyPath)
 	}()
 
 	if *nodeType == "client" {
@@ -67,7 +76,7 @@ func main() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			sendLoop(ctx, mc, *destName, readStdin(), cfg.Servers, cfg.PathLen, clientTick)
+			sendLoop(ctx, mc, *destName, readStdin(), cfg.Servers, cfg.PathLen, clientTick, *cryptoType)
 		}()
 	} else {
 		flushTimeout := time.Duration(cfg.FlushTimeoutMs) * time.Millisecond

@@ -9,58 +9,103 @@ import (
 )
 
 const (
-	KeySize = 4096
+	RSAKeySize = 4096
 )
+
+// generateRSAKeysForNode generates an RSA key pair for a single node
+// and exports both the private and public PEM files.
+func generateRSAKeysForNode(nodeType string, index int, keysFolder, publicKeysFolder string) error {
+	privateKeyPath := nodeType + "-" + strconv.Itoa(index) + "-rsa-private.pem"
+	publicKetPath := nodeType + "-" + strconv.Itoa(index) + "-rsa-public.pem"
+	private, public, err := keygen.GenerateRSAKeys(RSAKeySize)
+	if err != nil {
+		return fmt.Errorf("error generating RSA keys: %w", err)
+	}
+	err = keygen.ExportPrivateRSAKey(private, keysFolder, privateKeyPath)
+	if err != nil {
+		return fmt.Errorf("error exporting RSA private key: %w", err)
+	}
+	return keygen.ExportPublicRSAKey(public, publicKeysFolder, publicKetPath)
+}
+
+// generateECCKeysForNode generates an ECC key pair for a single node
+// and exports both the private and public PEM files.
+func generateECCKeysForNode(nodeType string, index int, keysFolder, publicKeysFolder string) error {
+	privateKeyPath := nodeType + "-" + strconv.Itoa(index) + "-ecc-private.pem"
+	publicKetPath := nodeType + "-" + strconv.Itoa(index) + "-ecc-public.pem"
+	private, public, err := keygen.GenerateECCKeys()
+	if err != nil {
+		return fmt.Errorf("error generating ECC keys: %w", err)
+	}
+	err = keygen.ExportPrivateECCKey(private, keysFolder, privateKeyPath)
+	if err != nil {
+		return fmt.Errorf("error exporting ECC private key: %w", err)
+	}
+	return keygen.ExportPublicECCKey(public, publicKeysFolder, publicKetPath)
+}
 
 func main() {
 	clientCount := flag.Int("clients", 2, "number of clients")
 	serverCount := flag.Int("servers", 3, "number of mix nodes")
+	cryptoType := flag.String("crypto-type", "both", "key type to generate: rsa, ecc, or both")
 
 	flag.Parse()
 
-	fmt.Printf("Generating %d pairs of keys for the clients and %d pairs of keys for the servers... ", *clientCount, *serverCount)
+	fmt.Printf("Generating %s key pairs for %d clients and %d servers... ",
+		*cryptoType, *clientCount, *serverCount)
 
 	keysFolder := "keys"
 	publicKeysFolder := keysFolder + "/public"
+
 	for i := range *clientCount {
-		privateKeyPath := "client-" + strconv.Itoa(i+1) + "-rsa-private.pem"
-		publicKetPath := "client-" + strconv.Itoa(i+1) + "-rsa-public.pem"
-		private, public, err := keygen.GenerateRSAKeys(KeySize)
-		if err != nil {
-			fmt.Print("Error generating keys: " + err.Error())
-			return
-		}
-		err = keygen.ExportPrivateRSAKey(private, keysFolder, privateKeyPath)
-		if err != nil {
-			fmt.Print("Error exporting private key: " + err.Error())
-			return
-		}
-		err = keygen.ExportPublicRSAKey(public, publicKeysFolder, publicKetPath)
-		if err != nil {
-			fmt.Print("Error exporting public key: " + err.Error())
-			return
+		index := i + 1
+		switch *cryptoType {
+		case "ecc":
+			if err := generateECCKeysForNode("client", index, keysFolder, publicKeysFolder); err != nil {
+				fmt.Println(err)
+				return
+			}
+		case "rsa":
+			if err := generateRSAKeysForNode("client", index, keysFolder, publicKeysFolder); err != nil {
+				fmt.Println(err)
+				return
+			}
+		default:
+			if err := generateRSAKeysForNode("client", index, keysFolder, publicKeysFolder); err != nil {
+				fmt.Println(err)
+				return
+			}
+			if err := generateECCKeysForNode("client", index, keysFolder, publicKeysFolder); err != nil {
+				fmt.Println(err)
+				return
+			}
 		}
 	}
 
 	for i := range *serverCount {
-		privateKeyPath := "server-" + strconv.Itoa(i+1) + "-rsa-private.pem"
-		publicKetPath := "server-" + strconv.Itoa(i+1) + "-rsa-public.pem"
-		private, public, err := keygen.GenerateRSAKeys(KeySize)
-		if err != nil {
-			fmt.Print("Error generating keys: " + err.Error())
-			return
-		}
-		err = keygen.ExportPrivateRSAKey(private, keysFolder, privateKeyPath)
-		if err != nil {
-			fmt.Print("Error exporting private key: " + err.Error())
-			return
-		}
-		err = keygen.ExportPublicRSAKey(public, publicKeysFolder, publicKetPath)
-		if err != nil {
-			fmt.Print("Error exporting public key: " + err.Error())
-			return
+		index := i + 1
+		switch *cryptoType {
+		case "ecc":
+			if err := generateECCKeysForNode("server", index, keysFolder, publicKeysFolder); err != nil {
+				fmt.Println(err)
+				return
+			}
+		case "rsa":
+			if err := generateRSAKeysForNode("server", index, keysFolder, publicKeysFolder); err != nil {
+				fmt.Println(err)
+				return
+			}
+		default:
+			if err := generateRSAKeysForNode("server", index, keysFolder, publicKeysFolder); err != nil {
+				fmt.Println(err)
+				return
+			}
+			if err := generateECCKeysForNode("server", index, keysFolder, publicKeysFolder); err != nil {
+				fmt.Println(err)
+				return
+			}
 		}
 	}
 
-	fmt.Printf("Done.\n")
+	fmt.Print("Done.\n")
 }

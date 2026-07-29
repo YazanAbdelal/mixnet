@@ -40,7 +40,7 @@ func readStdin() <-chan string {
 }
 
 // sendLoop reads messages (string) from the stdin, encrypts the message with onion and then forwards them to the next node in the mixnet using a gRPC stub.
-func sendLoop(ctx context.Context, mc *mixnode.MixNode, dest string, input <-chan string, servers []string, pathLen int, clientTick time.Duration) {
+func sendLoop(ctx context.Context, mc *mixnode.MixNode, dest string, input <-chan string, servers []string, pathLen int, clientTick time.Duration, cryptoType string) {
 	ticker := time.NewTicker(clientTick)
 	defer ticker.Stop()
 
@@ -49,14 +49,14 @@ func sendLoop(ctx context.Context, mc *mixnode.MixNode, dest string, input <-cha
 		case <-ticker.C:
 			select {
 			case msg := <-input:
-				packet, firstNode, err := crypto.OnionEncrypt(msg, dest, false, servers, pathLen, PublicKeysPath)
+				packet, firstNode, err := crypto.OnionEncrypt(msg, dest, false, servers, pathLen, PublicKeysPath, cryptoType)
 				if err != nil {
 					log.Printf("Error encrypting message: %v", err)
 					continue
 				}
 				sendToPeer(mc.Stubs[firstNode], packet)
 			default:
-				packet, firstNode, err := crypto.OnionEncrypt("__DUMMY__", dest, true, servers, pathLen, PublicKeysPath)
+				packet, firstNode, err := crypto.OnionEncrypt("__DUMMY__", dest, true, servers, pathLen, PublicKeysPath, cryptoType)
 				if err != nil {
 					log.Printf("Error encrypting message: %v", err)
 					continue

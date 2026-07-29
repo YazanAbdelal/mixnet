@@ -113,6 +113,17 @@ EOF
 #   - clients depend_on all servers so they start after
 #     the mix network is ready
 generate_compose_file() {
+	# pick the right private key filename and mount path based on
+	# what crypto we're using. RSA keys go to private.pem, ECC keys
+	# go to ecc_private.pem so the app knows which one to load.
+	if [ "$crypto_type" = "ecc" ]; then
+		private_key_suffix="-ecc-private.pem"
+		container_private_key_path="/etc/mixnet/keys/ecc_private.pem"
+	else
+		private_key_suffix="-rsa-private.pem"
+		container_private_key_path="/etc/mixnet/keys/private.pem"
+	fi
+
 	cat > docker-compose.yml <<COMPOSE_EOF
 networks:
   mixnet:
@@ -127,9 +138,9 @@ COMPOSE_EOF
     build:
       context: .
       dockerfile: mixnode/Dockerfile
-    command: ["--type", "server", "--name", "server-$i"]
+    command: ["--type", "server", "--name", "server-$i", "--crypto", "$crypto_type"]
     volumes:
-      - ./keys/server-${i}-private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/server-${i}${private_key_suffix}:${container_private_key_path}:ro
       - ./keys/public:/etc/mixnet/keys/public:ro
       - ./certs/server-${i}.crt:/etc/mixnet/certs/tls.crt:ro
       - ./certs/server-${i}.key:/etc/mixnet/certs/tls.key:ro
@@ -148,11 +159,11 @@ COMPOSE_EOF
     build:
       context: .
       dockerfile: mixnode/Dockerfile
-    command: ["--type", "client", "--name", "client-$i", "--dest", ""]
+    command: ["--type", "client", "--name", "client-$i", "--dest", "", "--crypto", "$crypto_type"]
     stdin_open: true
     tty: true
     volumes:
-      - ./keys/client-${i}-private.pem:/etc/mixnet/keys/private.pem:ro
+      - ./keys/client-${i}${private_key_suffix}:${container_private_key_path}:ro
       - ./keys/public:/etc/mixnet/keys/public:ro
       - ./certs/client-${i}.crt:/etc/mixnet/certs/tls.crt:ro
       - ./certs/client-${i}.key:/etc/mixnet/certs/tls.key:ro
@@ -186,10 +197,15 @@ read -p "Client tick (microseconds between sends, default 200): " client_tick_us
 client_tick_us=${client_tick_us:-200000}
 read -p "Flush timeout (ms before a partial batch is sent, default 500): " flush_timeout_ms
 flush_timeout_ms=${flush_timeout_ms:-1}
+read -p "Crypto type, rsa or ecc (default: rsa): " crypto_type
+crypto_type=${crypto_type:-rsa}
 
-# step 1: generate RSA key pairs (private + public) for each node
+# step 1: generate key pairs (private + public) for each node
 #         (used for onion encryption, not TLS)
-go run ./keygen/cmd -servers "$num_nodes" -clients "$num_clients"
+#         the keygen tool generates RSA keys by default, but if
+#         you picked ecc above it will generate ECC keys instead,
+#         and if you picked both it generates both at once
+go run ./keygen/cmd -servers "$num_nodes" -clients "$num_clients" -crypto-type "$crypto_type"
 
 # step 2: generate mTLS certificates (CA + one per node)
 #         (used for authenticated gRPC channels)
@@ -198,5 +214,10 @@ generate_tls_certs
 # step 3: write config.json listing all servers and clients
 generate_config
 
-# step 4: write docker-compose.yml with all services, volumes and networks
+# step 4: write docker-compose.yml with all services, volumes and networks,
+#         the --crypto flag we bake in here tells each container whether to
+#         use rsa or ecc for its onion layers
 generate_compose_file
+
+echo "Done. You can now run: docker compose up"
+echo "Using crypto: $crypto_type"

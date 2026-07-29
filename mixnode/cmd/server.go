@@ -38,15 +38,26 @@ func runServer(mc *mixnode.MixNode, creds credentials.TransportCredentials) *grp
 }
 
 // receiveMessages receives gRPC messages from peers, decrypts them and forwards them to the next node if there is one.
-func receiveMessages(ctx context.Context, mc *mixnode.MixNode, nodeType string, batchCh chan<- mixnode.BatchEntry) {
+func receiveMessages(ctx context.Context, mc *mixnode.MixNode, nodeType string, batchCh chan<- mixnode.BatchEntry,
+	cryptoType string, privKeyPath string) {
 	processMsg := func(msg []byte) {
+		var decryptedMsg []byte
+		var nextNode string
+		var isDummy bool
+		var err error
+
 		// decrypt onion layer
-		decryptedMsg, nextNode, isDummy, err := crypto.DecryptOnionLayerWithRSA(msg, "/etc/mixnet/keys/private.pem")
+		switch cryptoType {
+		case "rsa":
+			decryptedMsg, nextNode, isDummy, err = crypto.DecryptOnionLayerWithRSA(msg, privKeyPath) // "/etc/mixnet/keys/private.pem"
+		default:
+			decryptedMsg, nextNode, isDummy, err = crypto.DecryptOnionLayerWithECC(msg, privKeyPath)
+		}
+
 		if err != nil {
 			log.Fatal("receiveMessages: Error decrypting onion layer: " + err.Error())
 			return
 		}
-
 		// if this is the last node, print message or drop it.
 		if nextNode == "" {
 			// if dummy and this is the last node, drop the message
