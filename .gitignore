@@ -2,6 +2,7 @@
 keys/
 certs/
 go.work.sum
-README_ALT.md
 config.json
 *.exe
+docker-compose.yml
+config.json
